@@ -1,0 +1,199 @@
+[
+  {
+    "elementType": "geometry",
+    "stylers": [
+      { "color": "#1d1d1d" }
+    ]
+  },
+  {
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#8a8a8a" }
+    ]
+  },
+  {
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      { "color": "#1d1d1d" }
+    ]
+  },
+  {
+    "featureType": "administrative.neighborhood",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#b0b0b0" },
+      { "visibility": "on" }
+    ]
+  },
+  {
+    "featureType": "administrative.locality",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#ffffff" },
+      { "visibility": "on" }
+    ]
+  },
+  {
+    "featureType": "administrative.country",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#888888" },
+      { "visibility": "on" }
+    ]
+  },
+  {
+    "featureType": "administrative.province",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#666666" },
+      { "visibility": "on" }
+    ]
+  },
+  {
+    "featureType": "poi.government",
+    "elementType": "labels.icon",
+    "stylers": [
+      { "visibility": "on" },
+      { "color": "#48b7ab" }
+    ]
+  },
+  {
+    "featureType": "poi.government",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#48b7ab" }
+    ]
+  },
+  {
+    "featureType": "poi.medical",
+    "elementType": "labels.icon",
+    "stylers": [
+      { "visibility": "on" },
+      { "color": "#FF0000" }
+    ]
+  },
+  {
+    "featureType": "poi.medical",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#FF0000" }
+    ]
+  },
+  {
+    "featureType": "poi.school",
+    "elementType": "labels.icon",
+    "stylers": [
+      { "visibility": "on" },
+      { "color": "#4663b9" }
+    ]
+  },
+  {
+    "featureType": "poi.school",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#4663b9" }
+    ]
+  },
+  {
+    "featureType": "poi.place_of_worship",
+    "elementType": "labels.icon",
+    "stylers": [
+      { "visibility": "on" },
+      { "color": "#FFA500" }
+    ]
+  },
+  {
+    "featureType": "poi.place_of_worship",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#FFA500" }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      { "color": "#1d1d1d" },
+      { "weight": 2 }
+    ]
+  },
+  {
+    "featureType": "poi.business",
+    "stylers": [
+      { "visibility": "off" }
+    ]
+  },
+  {
+    "featureType": "poi.medical",
+    "stylers": [
+      { "visibility": "on" }
+    ]
+  },
+  {
+    "featureType": "poi.school",
+    "stylers": [
+      { "visibility": "on" }
+    ]
+  },
+  {
+    "featureType": "poi.place_of_worship",
+    "stylers": [
+      { "visibility": "on" }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry",
+    "stylers": [
+      { "color": "#2c2c2c" }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry",
+    "stylers": [
+      { "color": "#3d3d3d" }
+    ]
+  },
+  {
+    "featureType": "road.local",
+    "elementType": "geometry",
+    "stylers": [
+      { "color": "#2e2e2e" }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "labels.icon",
+    "stylers": [
+      { "visibility": "off" }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#757575" }
+    ]
+  },
+  {
+    "featureType": "transit",
+    "stylers": [
+      { "visibility": "off" }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "geometry.fill",
+    "stylers": [
+      { "color": "#0e0e0e" }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#555555" }
+    ]
+  }
+]

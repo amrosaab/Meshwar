@@ -1,0 +1,209 @@
+[
+  {
+    "featureType": "landscape.man_made",
+    "elementType": "geometry",
+    "stylers": [
+      { "color": "#f2f2f2" }
+    ]
+  },
+
+  {
+    "featureType": "landscape.natural",
+    "elementType": "geometry.fill",
+    "stylers": [
+      { "color": "#e8f3e8" }
+    ]
+  },
+  {
+    "featureType": "landscape.natural.landcover",
+    "elementType": "geometry.fill",
+    "stylers": [
+      { "color": "#e8f3e8" }
+    ]
+  },
+  {
+    "featureType": "landscape.natural.terrain",
+    "elementType": "geometry.fill",
+    "stylers": [
+      { "color": "#e8f3e8" }
+    ]
+  },
+
+  {
+    "featureType": "poi.park",
+    "elementType": "geometry.fill",
+    "stylers": [
+      { "color": "#dff2d8" }
+    ]
+  },
+
+  {
+    "featureType": "water",
+    "elementType": "geometry.fill",
+    "stylers": [
+      { "color": "#d6edf0" }
+    ]
+  },
+
+  {
+    "featureType": "administrative.neighborhood",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "visibility": "on" },
+      { "color": "#555555" }
+    ]
+  },
+  {
+    "featureType": "administrative.locality",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "visibility": "on" },
+      { "color": "#333333" }
+    ]
+  },
+
+  {
+    "featureType": "poi.government",
+    "elementType": "labels.icon",
+    "stylers": [
+      { "visibility": "on" },
+      { "color": "#48b7ab" }
+    ]
+  },
+  {
+    "featureType": "poi.government",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#48b7ab" }
+    ]
+  },
+
+  {
+    "featureType": "poi.medical",
+    "elementType": "labels.icon",
+    "stylers": [
+      { "visibility": "on" },
+      { "color": "#FF0000" }
+    ]
+  },
+  {
+    "featureType": "poi.medical",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#FF0000" }
+    ]
+  },
+
+  {
+    "featureType": "poi.school",
+    "elementType": "labels.icon",
+    "stylers": [
+      { "visibility": "on" },
+      { "color": "#4663b9" }
+    ]
+  },
+  {
+    "featureType": "poi.school",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#4663b9" }
+    ]
+  },
+
+  {
+    "featureType": "poi.place_of_worship",
+    "elementType": "labels.icon",
+    "stylers": [
+      { "visibility": "on" },
+      { "color": "#FFA500" }
+    ]
+  },
+  {
+    "featureType": "poi.place_of_worship",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#FFA500" }
+    ]
+  },
+
+  {
+    "featureType": "poi",
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      { "color": "#ffffff" },
+      { "weight": 1 }
+    ]
+  },
+
+  {
+    "featureType": "poi.business",
+    "stylers": [
+      { "visibility": "off" }
+    ]
+  },
+
+  { "featureType": "poi.government", "stylers": [ { "visibility": "on" } ] },
+  { "featureType": "poi.medical", "stylers": [ { "visibility": "on" } ] },
+  { "featureType": "poi.school", "stylers": [ { "visibility": "on" } ] },
+  { "featureType": "poi.place_of_worship", "stylers": [ { "visibility": "on" } ] },
+
+  {
+    "featureType": "road",
+    "elementType": "labels.icon",
+    "stylers": [
+      { "visibility": "off" }
+    ]
+  },
+  {
+    "featureType": "road.arterial",
+    "elementType": "geometry",
+    "stylers": [
+      { "color": "#ffffff" }
+    ]
+  },
+  {
+    "featureType": "road.local",
+    "elementType": "geometry",
+    "stylers": [
+      { "color": "#f7f7f7" }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry.fill",
+    "stylers": [
+      { "color": "#fcf297" }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#aaaaaa" }
+    ]
+  },
+
+  {
+    "featureType": "transit",
+    "stylers": [
+      { "visibility": "off" }
+    ]
+  },
+
+  {
+    "featureType": "administrative.country",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "visibility": "on" },
+      { "color": "#999999" }
+    ]
+  },
+  {
+    "featureType": "administrative.province",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "visibility": "on" },
+      { "color": "#bbbbbb" }
+    ]
+  }
+]

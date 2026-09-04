@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Meshwar</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>ar</string>
+		<string>en</string>
+	</array>
+	<key>CFBundleName</key>
+	<string>flutter_user</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.625488459506-jkm43il4qhb01d6cb1g58ic1loj9luea</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>http</string>
+		<string>https</string>
+		<string>phonepe</string>
+		<string>tez</string>
+		<string>paytm</string>
+	</array>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Allow access to camera to capture photos for updating profile picture</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Meshwar accesses your contacts so you can quickly select an emergency contact to share your live trip status with, and invite friends to join Meshwar.&quot;
+(Adjust based on the actual feature — if it&apos;s only for emergency contacts, drop the &quot;invite friends&quot; part; if it&apos;s only for inviting friends, drop the emergency contact part. Apple wants the string to match the real feature exactly.)</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Program requires GPS to track cars and get ride</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Program requires GPS to track cars and book ride</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Program requires GPS to track cars and book ride</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Program requires GPS to track cars and book ride</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Meshwar uses your microphone during in-app voice calls between riders and drivers to coordinate pickup and drop-off details.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Allow access to photo library to pick photos for updating profile picture</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+</dict>
+</plist>
