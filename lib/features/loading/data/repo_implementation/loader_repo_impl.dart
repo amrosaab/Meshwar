@@ -41,6 +41,10 @@ class LoaderRepositoryImpl implements LoaderRepository {
       return Left(GetDataFailure(message: e.message));
     } on BadRequestException catch (e) {
       return Left(InPutDataFailure(message: e.message));
+    } on ServerException catch (e) {
+      return Left(GetDataFailure(message: e.message));
+    } catch (e) {
+      return Left(GetDataFailure(message: e.toString()));
     }
 
     return Right(result);

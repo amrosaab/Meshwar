@@ -1,0 +1,7 @@
+# Meshwar sedan concept
+
+Generated with the built-in image generation tool. Preview asset: `meshwar-sedan-3d.png` (transparent PNG). This is a single concept view; it has not replaced the production map's heading sprites.
+
+## Final prompt
+
+A single original stylized 3D sedan navigation avatar for a ride-hailing map. TRANSPARENT background. Render like a small friendly premium toy car or polished clay 3D app icon, not a photorealistic automotive advertisement. Pearl white rounded four-door sedan with dark blue charcoal windows, simple thick black tires and five-spoke silver wheels, small crimson accents. Clean chunky proportions with visible body height, curved roof, simplified readable headlights. Elevated front three-quarter view looking down at 50 degrees, nose toward bottom-left, see roof and one side. Strong readable silhouette designed for a 52 px map icon. Include a compact soft gray oval CONTACT SHADOW directly beneath the chassis and tires: darkest only right under the wheels, softly fading over a very short distance, semitransparent with transparent outside. The shadow must visibly ground the car, without a large surrounding glow, fog, gradient backdrop, or solid floor. Soft lighting, restrained highlights. Center the entire vehicle with generous padding; the car occupies about 65 percent of square canvas width. One single car only. No text, logos, badges, road, scenery, UI, pedestal, ground plane, or multiple views. True transparent alpha around car and its compact shadow.

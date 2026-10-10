@@ -27,7 +27,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.meshwar.client"
-    compileSdk = 36
+    compileSdkVersion("android-37.0")
     ndkVersion = "28.2.13676358"
 
     compileOptions {
@@ -70,6 +70,9 @@ android {
                 "proguard-rules.pro"
             )
         }
+        debug {
+            signingConfig = signingConfigs.getByName("release")
+        }
     }
 }
 
@@ -85,7 +88,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.activity:activity-compose:1.9.0")
 
-    implementation(platform("com.google.firebase:firebase-bom:33.6.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.19.0"))
     implementation("androidx.multidex:multidex:2.0.1")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("com.google.android.material:material:1.10.0")

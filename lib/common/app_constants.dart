@@ -8,6 +8,12 @@ import '../features/language/domain/models/language_listing_model.dart';
 class AppConstants {
   static const String title = 'Meshwar';
   static const String baseUrl = 'https://meshwar.ws/';
+  // meshwar.ws proxies /__/auth/ to this project's Firebase handler.
+  // Set FIREBASE_AUTH_DOMAIN to an empty value to use Firebase's default.
+  static const String firebaseAuthDomain = String.fromEnvironment(
+    'FIREBASE_AUTH_DOMAIN',
+    defaultValue: 'meshwar.ws',
+  );
   static String firbaseApiKey = (Platform.isAndroid)
       ? "AIzaSyANQlGC4GrYjqUn5S2u0uRomN-cnHqdAeM"
       : "AIzaSyAEKTPr1fiwgKzdqyAIOmMxUebAwW14F8Q";

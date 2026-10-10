@@ -72,26 +72,26 @@ class _EditLocationPageState extends State<EditLocationPage>
           } else if (state is SelectFromMapState) {
             final bookingBloc = context.read<BookingBloc>();
             Navigator.pushNamed(context, ConfirmLocationPage.routeName,
-                arguments: ConfirmLocationPageArguments(
-                    userData: widget.arg.userData,
-                    isPickupEdit: false,
-                    isEditAddress: true,
-                    isOutstationRide:
-                    widget.arg.requestData.isOutStation == '1',
-                    mapType: widget.arg.mapType,
-                    latlng: LatLng(
-                        bookingBloc
-                            .dropAddressList[
-                        bookingBloc.choosenAddressIndex]
-                            .lat,
-                        bookingBloc
-                            .dropAddressList[
-                        bookingBloc.choosenAddressIndex]
-                            .lng),
-                    transportType: widget.arg.requestData.transportType,
-                    selectedServiceIndex: widget.arg.selectedServiceIndex))
+                    arguments: ConfirmLocationPageArguments(
+                        userData: widget.arg.userData,
+                        isPickupEdit: false,
+                        isEditAddress: true,
+                        isOutstationRide:
+                            widget.arg.requestData.isOutStation == '1',
+                        mapType: widget.arg.mapType,
+                        latlng: LatLng(
+                            bookingBloc
+                                .dropAddressList[
+                                    bookingBloc.choosenAddressIndex]
+                                .lat,
+                            bookingBloc
+                                .dropAddressList[
+                                    bookingBloc.choosenAddressIndex]
+                                .lng),
+                        transportType: widget.arg.requestData.transportType,
+                        selectedServiceIndex: widget.arg.selectedServiceIndex))
                 .then(
-                  (value) {
+              (value) {
                 if (value != null) {
                   if (!context.mounted) return;
                   final address = value as AddressModel;
@@ -111,8 +111,8 @@ class _EditLocationPageState extends State<EditLocationPage>
                             cont: context,
                             address: address,
                             isReceiveParcel:
-                            widget.arg.requestData.parcelType ==
-                                'Receive Parcel',
+                                widget.arg.requestData.parcelType ==
+                                    'Receive Parcel',
                             name: widget.arg.userData.name,
                             number: widget.arg.userData.mobile,
                             transportType: widget.arg.requestData.transportType,
@@ -188,7 +188,7 @@ class _EditLocationPageState extends State<EditLocationPage>
                 ),
                 body: bodyMapBuilder(size, bookingBloc),
                 bottomNavigationBar:
-                bottomConfirmationWidget(size, bookingBloc),
+                    bottomConfirmationWidget(size, bookingBloc),
               ),
             );
           },
@@ -204,117 +204,117 @@ class _EditLocationPageState extends State<EditLocationPage>
           children: [
             (widget.arg.mapType == 'google_map')
                 ? ExcludeSemantics(
-              child: GoogleMap(
-                  onMapCreated: (GoogleMapController controller) {
-                    bookingBloc.googleMapController ??= controller;
-                  },
-                  compassEnabled: false,
-                  initialCameraPosition: CameraPosition(
-                    target: LatLng(
-                      AppConstants.currentLocations.latitude,
-                      AppConstants.currentLocations.longitude,
-                    ),
-                    zoom: 15.0,
-                  ),
-                  minMaxZoomPreference: const MinMaxZoomPreference(0, 20),
-                  markers: Set.from(bookingBloc.markerList),
-                  polylines: bookingBloc.polylines,
-                  rotateGesturesEnabled: true,
-                  buildingsEnabled: false,
-                  zoomControlsEnabled: false,
-                  myLocationEnabled: true,
-                  myLocationButtonEnabled: false),
-            )
+                    child: GoogleMap(
+                        onMapCreated: (GoogleMapController controller) {
+                          bookingBloc.googleMapController ??= controller;
+                        },
+                        compassEnabled: false,
+                        initialCameraPosition: CameraPosition(
+                          target: LatLng(
+                            AppConstants.currentLocations.latitude,
+                            AppConstants.currentLocations.longitude,
+                          ),
+                          zoom: 15.0,
+                        ),
+                        minMaxZoomPreference: const MinMaxZoomPreference(0, 20),
+                        markers: Set.from(bookingBloc.markerList),
+                        polylines: bookingBloc.polylines,
+                        rotateGesturesEnabled: true,
+                        buildingsEnabled: false,
+                        zoomControlsEnabled: false,
+                        myLocationEnabled: true,
+                        myLocationButtonEnabled: false),
+                  )
                 : ExcludeSemantics(
-              child: fm.FlutterMap(
-              mapController: bookingBloc.fmController,
-              options: fm.MapOptions(
-                onTap: (tapPosition, latLng) {},
-                onMapEvent: (v) async {},
-                onPositionChanged: (p, l) async {},
-                initialCenter: fmlt.LatLng(
-                    AppConstants.currentLocations.latitude,
-                    AppConstants.currentLocations.longitude),
-                initialZoom: 16,
-                minZoom: 5,
-                maxZoom: 20,
-              ),
-              children: [
-                fm.TileLayer(
-                  urlTemplate: (bookingBloc.userData!.osmMapSettings
-                      .enableMapbox ==
-                      true &&
-                      bookingBloc.userData!.osmMapSettings
-                          .mapboxPublicKey.isNotEmpty)
-                      ? 'https://api.mapbox.com/styles/v1/{style}/tiles/{z}/{x}/{y}?access_token=${bookingBloc.userData!.osmMapSettings.mapboxPublicKey}'
-                      : (bookingBloc.userData!.osmMapSettings
-                      .enableThunderforest ==
-                      true &&
-                      bookingBloc.userData!.osmMapSettings
-                          .thunderforestApiKey.isNotEmpty)
-                      ? 'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${bookingBloc.userData!.osmMapSettings.thunderforestApiKey}'
-                      : (bookingBloc.userData!.osmMapSettings
-                      .enableStadia ==
-                      true &&
-                      bookingBloc.userData!.osmMapSettings
-                          .stadiaApiKey.isNotEmpty)
-                      ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}.png?api_key=${bookingBloc.userData!.osmMapSettings.stadiaApiKey}'
-                      : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'package name here',
-                  tileProvider:
-                  const FMTCStore('mapStore').getTileProvider(),
-                ),
-                if (bookingBloc.markerList.isNotEmpty)
-                  fm.MarkerLayer(
-                    markers: List.generate(bookingBloc.markerList.length,
-                            (index) {
-                          final marker = bookingBloc.markerList[index];
-                          return fm.Marker(
-                            point: fmlt.LatLng(
-                              marker.position.latitude,
-                              marker.position.longitude,
-                            ),
-                            alignment: Alignment.topCenter,
-                            child: RotationTransition(
-                              turns: AlwaysStoppedAnimation(
-                                  marker.rotation / 360),
-                              child: Image.asset(
-                                marker.markerId.value.toString() == 'pick'
-                                    ? AppImages.pickPin
-                                    : (marker.markerId.value.toString() ==
-                                    'drop' ||
-                                    marker.markerId.value
-                                        .toString()
-                                        .contains('drop'))
-                                    ? AppImages.dropPin
-                                    : '',
-                                width: 16,
-                                height: 30,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const SizedBox();
-                                },
-                              ),
-                            ),
-                          );
-                        }),
-                  ),
-                if (bookingBloc.fmpoly.isNotEmpty)
-                  fm.PolylineLayer(
-                    polylines: [
-                      fm.Polyline(
-                        points: bookingBloc.fmpoly,
-                        color: Theme.of(context).brightness ==
-                            Brightness.dark
-                            ? Colors.white
-                            : Colors.black87,
-                        strokeWidth: 3,
+                    child: fm.FlutterMap(
+                      mapController: bookingBloc.fmController,
+                      options: fm.MapOptions(
+                        onTap: (tapPosition, latLng) {},
+                        onMapEvent: (v) async {},
+                        onPositionChanged: (p, l) async {},
+                        initialCenter: fmlt.LatLng(
+                            AppConstants.currentLocations.latitude,
+                            AppConstants.currentLocations.longitude),
+                        initialZoom: 16,
+                        minZoom: 5,
+                        maxZoom: 20,
                       ),
-                    ],
+                      children: [
+                        fm.TileLayer(
+                          urlTemplate: (bookingBloc.userData!.osmMapSettings
+                                          .enableMapbox ==
+                                      true &&
+                                  bookingBloc.userData!.osmMapSettings
+                                      .mapboxPublicKey.isNotEmpty)
+                              ? 'https://api.mapbox.com/styles/v1/{style}/tiles/{z}/{x}/{y}?access_token=${bookingBloc.userData!.osmMapSettings.mapboxPublicKey}'
+                              : (bookingBloc.userData!.osmMapSettings
+                                              .enableThunderforest ==
+                                          true &&
+                                      bookingBloc.userData!.osmMapSettings
+                                          .thunderforestApiKey.isNotEmpty)
+                                  ? 'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${bookingBloc.userData!.osmMapSettings.thunderforestApiKey}'
+                                  : (bookingBloc.userData!.osmMapSettings
+                                                  .enableStadia ==
+                                              true &&
+                                          bookingBloc.userData!.osmMapSettings
+                                              .stadiaApiKey.isNotEmpty)
+                                      ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}.png?api_key=${bookingBloc.userData!.osmMapSettings.stadiaApiKey}'
+                                      : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'package name here',
+                          tileProvider:
+                              const FMTCStore('mapStore').getTileProvider(),
+                        ),
+                        if (bookingBloc.markerList.isNotEmpty)
+                          fm.MarkerLayer(
+                            markers: List.generate(
+                                bookingBloc.markerList.length, (index) {
+                              final marker = bookingBloc.markerList[index];
+                              return fm.Marker(
+                                point: fmlt.LatLng(
+                                  marker.position.latitude,
+                                  marker.position.longitude,
+                                ),
+                                alignment: Alignment.topCenter,
+                                child: RotationTransition(
+                                  turns: AlwaysStoppedAnimation(
+                                      marker.rotation / 360),
+                                  child: Image.asset(
+                                    marker.markerId.value.toString() == 'pick'
+                                        ? AppImages.pickPin
+                                        : (marker.markerId.value.toString() ==
+                                                    'drop' ||
+                                                marker.markerId.value
+                                                    .toString()
+                                                    .contains('drop'))
+                                            ? AppImages.dropPin
+                                            : '',
+                                    width: 16,
+                                    height: 30,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const SizedBox();
+                                    },
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                        if (bookingBloc.fmpoly.isNotEmpty)
+                          fm.PolylineLayer(
+                            polylines: [
+                              fm.Polyline(
+                                points: bookingBloc.fmpoly,
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.white
+                                    : Colors.black87,
+                                strokeWidth: 3,
+                              ),
+                            ],
+                          ),
+                        const fm.RichAttributionWidget(attributions: []),
+                      ],
+                    ),
                   ),
-                const fm.RichAttributionWidget(attributions: []),
-              ],
-            ),
-            ),
             Positioned(
               bottom: 0,
               right: 16,
@@ -332,16 +332,16 @@ class _EditLocationPageState extends State<EditLocationPage>
                   decoration: BoxDecoration(
                       color: AppColors.primary,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: AppColors.surfaceBorder(context)),
+                      border:
+                          Border.all(color: AppColors.surfaceBorder(context)),
                       boxShadow: AppColors.surfaceShadow(context)),
                   margin: const EdgeInsets.only(bottom: 5),
                   child: Center(
                       child: Icon(
-                        Icons.my_location,
-                        size: 20,
-                        color: Colors.white,
-                      )),
+                    Icons.my_location,
+                    size: 20,
+                    color: Colors.white,
+                  )),
                 ),
               ),
             )
@@ -444,9 +444,9 @@ class _EditLocationPageState extends State<EditLocationPage>
               },
               children: List.generate(
                 bookingBloc.dropAddressList.length,
-                    (index) {
+                (index) {
                   TextEditingController controller =
-                  bookingBloc.addressTextControllerList.elementAt(index);
+                      bookingBloc.addressTextControllerList.elementAt(index);
                   return Padding(
                     key: Key('$index'),
                     padding: EdgeInsets.only(bottom: size.width * 0.02),
@@ -467,7 +467,7 @@ class _EditLocationPageState extends State<EditLocationPage>
                               child: MyText(
                                   text: '$index',
                                   textStyle:
-                                  Theme.of(context).textTheme.bodySmall),
+                                      Theme.of(context).textTheme.bodySmall),
                             ),
                           ),
                           SizedBox(width: size.width * 0.02),
@@ -497,55 +497,55 @@ class _EditLocationPageState extends State<EditLocationPage>
                                             color: Theme.of(context)
                                                 .disabledColor
                                                 .withAlpha(
-                                                (0.3 * 255).toInt()))),
+                                                    (0.3 * 255).toInt()))),
                                     focusedBorder: OutlineInputBorder(
                                         borderSide: BorderSide(
                                             width: 0.8,
                                             color: Theme.of(context)
                                                 .disabledColor)),
                                     hintText: (index ==
-                                        bookingBloc.dropAddressList.length -
-                                            1)
+                                            bookingBloc.dropAddressList.length -
+                                                1)
                                         ? AppLocalizations.of(context)!
-                                        .destinationAddress
+                                            .destinationAddress
                                         : AppLocalizations.of(context)!
-                                        .addStopAddress,
+                                            .addStopAddress,
                                     hintTextStyle:
-                                    Theme.of(context).textTheme.bodyMedium,
+                                        Theme.of(context).textTheme.bodyMedium,
                                     prefixConstraints: BoxConstraints(
                                         maxWidth: size.width * 0.065),
                                     prefixIcon: (index == 0 ||
-                                        index ==
-                                            bookingBloc.dropAddressList
-                                                .length -
-                                                1)
+                                            index ==
+                                                bookingBloc.dropAddressList
+                                                        .length -
+                                                    1)
                                         ? const Center(child: DropIcon())
                                         : null,
                                     suffixConstraints: BoxConstraints(
                                         maxWidth: size.width * 0.2),
                                     suffixIcon: controller.text.isNotEmpty
                                         ? Padding(
-                                      padding: const EdgeInsets.only(
-                                          right: 10, left: 10),
-                                      child: InkWell(
-                                        onTap: () {
-                                          bookingBloc
-                                              .choosenAddressIndex =
-                                              index;
-                                          bookingBloc.add(UpdateEvent());
-                                          bookingBloc
-                                              .add(SelectFromMapEvent());
-                                        },
-                                        child: Icon(
-                                          Icons.edit,
-                                          size: 20,
-                                          color: Theme.of(context)
-                                              .disabledColor
-                                              .withAlpha(
-                                              (0.4 * 255).toInt()),
-                                        ),
-                                      ),
-                                    )
+                                            padding: const EdgeInsets.only(
+                                                right: 10, left: 10),
+                                            child: InkWell(
+                                              onTap: () {
+                                                bookingBloc
+                                                        .choosenAddressIndex =
+                                                    index;
+                                                bookingBloc.add(UpdateEvent());
+                                                bookingBloc
+                                                    .add(SelectFromMapEvent());
+                                              },
+                                              child: Icon(
+                                                Icons.edit,
+                                                size: 20,
+                                                color: Theme.of(context)
+                                                    .disabledColor
+                                                    .withAlpha(
+                                                        (0.4 * 255).toInt()),
+                                              ),
+                                            ),
+                                          )
                                         : null,
                                     onTap: () {
                                       bookingBloc.choosenAddressIndex = index;
@@ -567,45 +567,45 @@ class _EditLocationPageState extends State<EditLocationPage>
                         ),
                         (bookingBloc.dropAddressList.length > 1)
                             ? InkWell(
-                          onTap: () {
-                            bookingBloc.dropAddressList.removeAt(index);
-                            bookingBloc.addressTextControllerList
-                                .removeAt(index);
-                            bookingBloc.add(PolylineEvent(
-                              pickLat: double.parse(
-                                  bookingBloc.requestData!.pickLat),
-                              pickLng: double.parse(
-                                  bookingBloc.requestData!.pickLng),
-                              dropLat:
-                              bookingBloc.dropAddressList.last.lat,
-                              dropLng:
-                              bookingBloc.dropAddressList.last.lng,
-                              stops:
-                              (bookingBloc.dropAddressList.length > 1)
-                                  ? bookingBloc.dropAddressList
-                                  : [],
-                              pickAddress:
-                              bookingBloc.requestData!.pickAddress,
-                              dropAddress: bookingBloc
-                                  .dropAddressList.last.address,
-                              isDropChanged: true,
-                            ));
-                            bookingBloc.add(AddMarkersEvent(
-                                requestData: bookingBloc.requestData!,
-                                addressList:
-                                bookingBloc.dropAddressList));
-                            bookingBloc.add(UpdateEvent());
-                          },
-                          child: Padding(
-                            padding:
-                            EdgeInsets.only(left: size.width * 0.015),
-                            child: Icon(
-                              Icons.close,
-                              size: 20,
-                              color: Theme.of(context).disabledColor,
-                            ),
-                          ),
-                        )
+                                onTap: () {
+                                  bookingBloc.dropAddressList.removeAt(index);
+                                  bookingBloc.addressTextControllerList
+                                      .removeAt(index);
+                                  bookingBloc.add(PolylineEvent(
+                                    pickLat: double.parse(
+                                        bookingBloc.requestData!.pickLat),
+                                    pickLng: double.parse(
+                                        bookingBloc.requestData!.pickLng),
+                                    dropLat:
+                                        bookingBloc.dropAddressList.last.lat,
+                                    dropLng:
+                                        bookingBloc.dropAddressList.last.lng,
+                                    stops:
+                                        (bookingBloc.dropAddressList.length > 1)
+                                            ? bookingBloc.dropAddressList
+                                            : [],
+                                    pickAddress:
+                                        bookingBloc.requestData!.pickAddress,
+                                    dropAddress: bookingBloc
+                                        .dropAddressList.last.address,
+                                    isDropChanged: true,
+                                  ));
+                                  bookingBloc.add(AddMarkersEvent(
+                                      requestData: bookingBloc.requestData!,
+                                      addressList:
+                                          bookingBloc.dropAddressList));
+                                  bookingBloc.add(UpdateEvent());
+                                },
+                                child: Padding(
+                                  padding:
+                                      EdgeInsets.only(left: size.width * 0.015),
+                                  child: Icon(
+                                    Icons.close,
+                                    size: 20,
+                                    color: Theme.of(context).disabledColor,
+                                  ),
+                                ),
+                              )
                             : const SizedBox()
                       ],
                     ),

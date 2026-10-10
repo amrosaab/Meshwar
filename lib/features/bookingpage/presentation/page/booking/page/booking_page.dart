@@ -139,13 +139,13 @@ class _BookingPageState extends State<BookingPage>
                   cont: context,
                   etaInfo: (!bookingBloc.isRentalRide)
                       ? bookingBloc.isMultiTypeVechiles
-                      ? bookingBloc.sortedEtaDetailsList[state.infoIndex]
-                      : bookingBloc.etaDetailsList[state.infoIndex]
+                          ? bookingBloc.sortedEtaDetailsList[state.infoIndex]
+                          : bookingBloc.etaDetailsList[state.infoIndex]
                       : bookingBloc.rentalEtaDetailsList[state.infoIndex],
                   isReturnTime:
-                  (bookingBloc.isOutstationRide && bookingBloc.isRoundTrip)
-                      ? true
-                      : false,
+                      (bookingBloc.isOutstationRide && bookingBloc.isRoundTrip)
+                          ? true
+                          : false,
                 );
               },
             );
@@ -173,63 +173,63 @@ class _BookingPageState extends State<BookingPage>
             );
           } else if (state is ShowBiddingState) {
             bookingBloc.farePriceController.text = bookingBloc
-                .isMultiTypeVechiles
+                    .isMultiTypeVechiles
                 ? (bookingBloc.isOutstationRide && bookingBloc.isRoundTrip)
-                ? (bookingBloc
-                .sortedEtaDetailsList[
-            bookingBloc.selectedVehicleIndex]
-                .total *
-                2)
-                .toString()
-                : bookingBloc
-                .sortedEtaDetailsList[bookingBloc.selectedVehicleIndex]
-                .total
-                .toString()
+                    ? (bookingBloc
+                                .sortedEtaDetailsList[
+                                    bookingBloc.selectedVehicleIndex]
+                                .total *
+                            2)
+                        .toString()
+                    : bookingBloc
+                        .sortedEtaDetailsList[bookingBloc.selectedVehicleIndex]
+                        .total
+                        .toString()
                 : (bookingBloc.isOutstationRide && bookingBloc.isRoundTrip)
-                ? (bookingBloc
-                .etaDetailsList[
-            bookingBloc.selectedVehicleIndex]
-                .total *
-                2)
-                .toString()
-                : bookingBloc
-                .etaDetailsList[bookingBloc.selectedVehicleIndex].total
-                .toString();
+                    ? (bookingBloc
+                                .etaDetailsList[
+                                    bookingBloc.selectedVehicleIndex]
+                                .total *
+                            2)
+                        .toString()
+                    : bookingBloc
+                        .etaDetailsList[bookingBloc.selectedVehicleIndex].total
+                        .toString();
             // Initialize bidding flags based on the just-set fare and allowed range
             try {
               final bool multi = bookingBloc.isMultiTypeVechiles;
               final String lowPct = multi
                   ? bookingBloc
-                  .sortedEtaDetailsList[bookingBloc.selectedVehicleIndex]
-                  .biddingLowPercentage
+                      .sortedEtaDetailsList[bookingBloc.selectedVehicleIndex]
+                      .biddingLowPercentage
                   : bookingBloc.etaDetailsList[bookingBloc.selectedVehicleIndex]
-                  .biddingLowPercentage;
+                      .biddingLowPercentage;
               final String highPct = multi
                   ? bookingBloc
-                  .sortedEtaDetailsList[bookingBloc.selectedVehicleIndex]
-                  .biddingHighPercentage
+                      .sortedEtaDetailsList[bookingBloc.selectedVehicleIndex]
+                      .biddingHighPercentage
                   : bookingBloc.etaDetailsList[bookingBloc.selectedVehicleIndex]
-                  .biddingHighPercentage;
+                      .biddingHighPercentage;
 
               final double baseTotal = multi
                   ? (bookingBloc.isOutstationRide && bookingBloc.isRoundTrip)
-                  ? (bookingBloc
-                  .sortedEtaDetailsList[
-              bookingBloc.selectedVehicleIndex]
-                  .total *
-                  2)
-                  : bookingBloc
-                  .sortedEtaDetailsList[
-              bookingBloc.selectedVehicleIndex]
-                  .total
+                      ? (bookingBloc
+                              .sortedEtaDetailsList[
+                                  bookingBloc.selectedVehicleIndex]
+                              .total *
+                          2)
+                      : bookingBloc
+                          .sortedEtaDetailsList[
+                              bookingBloc.selectedVehicleIndex]
+                          .total
                   : (bookingBloc.isOutstationRide && bookingBloc.isRoundTrip)
-                  ? (bookingBloc
-                  .etaDetailsList[bookingBloc.selectedVehicleIndex]
-                  .total *
-                  2)
-                  : bookingBloc
-                  .etaDetailsList[bookingBloc.selectedVehicleIndex]
-                  .total;
+                      ? (bookingBloc
+                              .etaDetailsList[bookingBloc.selectedVehicleIndex]
+                              .total *
+                          2)
+                      : bookingBloc
+                          .etaDetailsList[bookingBloc.selectedVehicleIndex]
+                          .total;
               final double current =
                   double.tryParse(bookingBloc.farePriceController.text) ??
                       baseTotal;
@@ -283,11 +283,13 @@ class _BookingPageState extends State<BookingPage>
               isDismissible: false,
               enableDrag: false,
               elevation: 0,
+              isScrollControlled: true,
+              useSafeArea: true,
               barrierColor: Colors.black54,
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              backgroundColor: Colors.transparent,
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(20.0),
+                  top: Radius.circular(32.0),
                 ),
               ),
               builder: (_) {
@@ -307,7 +309,7 @@ class _BookingPageState extends State<BookingPage>
                   child: CustomSingleButtonDialoge(
                     title: AppLocalizations.of(context)!.success,
                     content:
-                    AppLocalizations.of(context)!.rideScheduledSuccessfully,
+                        AppLocalizations.of(context)!.rideScheduledSuccessfully,
                     btnName: AppLocalizations.of(context)!.okText,
                     onTap: () {
                       context
@@ -360,9 +362,9 @@ class _BookingPageState extends State<BookingPage>
                 context,
                 MaterialPageRoute(
                     builder: (context) => BlocProvider.value(
-                      value: bookingBloc,
-                      child: const ChatWithDriverWidget(),
-                    )));
+                          value: bookingBloc,
+                          child: const ChatWithDriverWidget(),
+                        )));
           } else if (state is TripRideCancelState) {
             if (state.isCancelByDriver) {
               showDialog(
@@ -374,7 +376,7 @@ class _BookingPageState extends State<BookingPage>
                     child: CustomSingleButtonDialoge(
                       title: AppLocalizations.of(context)!.rideCancelled,
                       content:
-                      AppLocalizations.of(context)!.rideCancelledByDriver,
+                          AppLocalizations.of(context)!.rideCancelledByDriver,
                       btnName: AppLocalizations.of(context)!.okText,
                       onTap: () {
                         bookingBloc.nearByVechileSubscription?.cancel();
@@ -423,7 +425,7 @@ class _BookingPageState extends State<BookingPage>
                     requestBillData: bookingBloc.requestBillData!,
                     driverData: bookingBloc.driverData!,
                     rideRepository: state.rideRepository),
-                    (route) => false);
+                (route) => false);
           } else if (state is EtaNotAvailableState) {
           } else if (state is RentalPackageSelectState) {
             bookingBloc.add(BookingRentalEtaRequestEvent(
@@ -433,10 +435,13 @@ class _BookingPageState extends State<BookingPage>
               preferenceId: bookingBloc.selectPreference,
             ));
             WidgetsBinding.instance.addPostFrameCallback(
-                  (timeStamp) {
+              (timeStamp) {
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
+                  useSafeArea: true,
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+                  clipBehavior: Clip.antiAlias,
                   isDismissible: true,
                   enableDrag: true,
                   barrierColor: Colors.black54,
@@ -445,11 +450,11 @@ class _BookingPageState extends State<BookingPage>
                     return BlocProvider.value(
                       value: bookingBloc,
                       child:
-                      PopScope(canPop: false, child: packageList(context)),
+                          PopScope(canPop: false, child: packageList(context)),
                     );
                   },
                 ).whenComplete(
-                      () {
+                  () {
                     if (bookingBloc.rentalEtaDetailsList.isEmpty) {
                       bookingBloc.add(BookingNavigatorPopEvent());
                     }
@@ -465,14 +470,14 @@ class _BookingPageState extends State<BookingPage>
             }
           } else if (state is EditLocationState) {
             Navigator.pushNamed(context, EditLocationPage.routeName,
-                arguments: EditLocationPageArguments(
-                    addressList: state.addressList,
-                    requestData: state.requestData,
-                    mapType: bookingBloc.mapType,
-                    userData: bookingBloc.userData!,
-                    selectedServiceIndex: widget.arg.selectedServiceIndex))
+                    arguments: EditLocationPageArguments(
+                        addressList: state.addressList,
+                        requestData: state.requestData,
+                        mapType: bookingBloc.mapType,
+                        userData: bookingBloc.userData!,
+                        selectedServiceIndex: widget.arg.selectedServiceIndex))
                 .then(
-                  (value) {
+              (value) {
                 if (value != null) {
                   if (value is EditLocation) {
                     bookingBloc.requestData = value.requestData;
@@ -527,8 +532,8 @@ class _BookingPageState extends State<BookingPage>
                                     .textTheme
                                     .titleLarge
                                     ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                      fontWeight: FontWeight.bold,
+                                    ),
                               ),
                               const SizedBox(height: 12),
                               MyText(
@@ -536,16 +541,16 @@ class _BookingPageState extends State<BookingPage>
                                     .convertToOutstation,
                                 textAlign: TextAlign.center,
                                 textStyle:
-                                Theme.of(context).textTheme.bodyMedium,
+                                    Theme.of(context).textTheme.bodyMedium,
                               ),
                               const SizedBox(height: 32),
                               Row(
                                 mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   CustomButton(
                                     buttonName:
-                                    AppLocalizations.of(context)!.no,
+                                        AppLocalizations.of(context)!.no,
                                     borderRadius: 5,
                                     isBorder: true,
                                     width: size.width * 0.4,
@@ -553,9 +558,9 @@ class _BookingPageState extends State<BookingPage>
                                     buttonColor: Theme.of(context)
                                         .scaffoldBackgroundColor,
                                     textSize: context
-                                        .read<BookingBloc>()
-                                        .languageCode ==
-                                        'fr'
+                                                .read<BookingBloc>()
+                                                .languageCode ==
+                                            'fr'
                                         ? 14
                                         : null,
                                     textColor: Theme.of(context).primaryColor,
@@ -567,7 +572,7 @@ class _BookingPageState extends State<BookingPage>
                                   ),
                                   CustomButton(
                                     buttonName:
-                                    AppLocalizations.of(context)!.yes,
+                                        AppLocalizations.of(context)!.yes,
                                     borderRadius: 5,
                                     width: size.width * 0.4,
                                     height: size.width * 0.1,
@@ -577,14 +582,14 @@ class _BookingPageState extends State<BookingPage>
                                       Navigator.pop(context);
                                       // Determine transport type for outstation ride based on user data
                                       final transportType = (widget.arg.userData
-                                          .showTaxiOutstationRideFeature ==
-                                          '1')
+                                                  .showTaxiOutstationRideFeature ==
+                                              '1')
                                           ? 'taxi'
                                           : (widget.arg.userData
-                                          .showDeliveryOutstationRideFeature ==
-                                          '1')
-                                          ? 'delivery'
-                                          : widget.arg.transportType;
+                                                      .showDeliveryOutstationRideFeature ==
+                                                  '1')
+                                              ? 'delivery'
+                                              : widget.arg.transportType;
 
                                       bookingBloc.add(BookingInitEvent(
                                         vsync: this,
@@ -594,21 +599,21 @@ class _BookingPageState extends State<BookingPage>
                                           droplat: widget.arg.droplat,
                                           droplng: widget.arg.droplng,
                                           pickupAddressList:
-                                          widget.arg.pickupAddressList,
+                                              widget.arg.pickupAddressList,
                                           stopAddressList:
-                                          widget.arg.stopAddressList,
+                                              widget.arg.stopAddressList,
                                           userData: widget.arg.userData,
                                           transportType:
-                                          transportType, // Use the determined transport type
+                                              transportType, // Use the determined transport type
                                           polyString: widget.arg.polyString,
                                           distance: widget.arg.distance,
                                           duration: widget.arg.duration,
                                           mapType: widget.arg.mapType,
                                           isOutstationRide:
-                                          true, // Explicitly set to true for outstation ride
+                                              true, // Explicitly set to true for outstation ride
                                           preferenceId: widget.arg.preferenceId,
                                           selectedServiceIndex:
-                                          widget.arg.selectedServiceIndex,
+                                              widget.arg.selectedServiceIndex,
                                         ),
                                       ));
                                     },
@@ -668,8 +673,8 @@ class _BookingPageState extends State<BookingPage>
                                     .textTheme
                                     .titleLarge
                                     ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                      fontWeight: FontWeight.bold,
+                                    ),
                               ),
                               const SizedBox(height: 12),
                               MyText(
@@ -678,12 +683,12 @@ class _BookingPageState extends State<BookingPage>
                                 maxLines: 5,
                                 textAlign: TextAlign.start,
                                 textStyle:
-                                Theme.of(context).textTheme.bodyMedium,
+                                    Theme.of(context).textTheme.bodyMedium,
                               ),
                               const SizedBox(height: 32),
                               CustomButton(
                                 buttonName:
-                                AppLocalizations.of(context)!.changeRoute,
+                                    AppLocalizations.of(context)!.changeRoute,
                                 borderRadius: 20,
                                 buttonColor: Theme.of(context).primaryColor,
                                 onTap: () {
@@ -714,23 +719,25 @@ class _BookingPageState extends State<BookingPage>
                   canPop: true,
                   child: SafeArea(
                     top: false,
+                    // The ride sheet handles its own home-indicator inset.
+                    bottom: !bookingBloc.isTripStart,
                     child: Scaffold(
                       resizeToAvoidBottomInset: false,
                       body: BookingBodyWidget(cont: context, arg: widget.arg),
                       bottomNavigationBar: (bookingBloc.isNormalRideSearching ||
-                          bookingBloc.isBiddingRideSearching)
+                              bookingBloc.isBiddingRideSearching)
                           ? null
                           : (!bookingBloc.isTripStart)
-                          ? ((!bookingBloc.isRentalRide &&
-                          bookingBloc
-                              .etaDetailsList.isNotEmpty) ||
-                          (bookingBloc.isRentalRide &&
-                              bookingBloc
-                                  .rentalEtaDetailsList.isNotEmpty))
-                          ? BookingBottomWidget(
-                          cont: context, arg: widget.arg)
-                          : null
-                          : null,
+                              ? ((!bookingBloc.isRentalRide &&
+                                          bookingBloc
+                                              .etaDetailsList.isNotEmpty) ||
+                                      (bookingBloc.isRentalRide &&
+                                          bookingBloc
+                                              .rentalEtaDetailsList.isNotEmpty))
+                                  ? BookingBottomWidget(
+                                      cont: context, arg: widget.arg)
+                                  : null
+                              : null,
                     ),
                   ),
                 ),

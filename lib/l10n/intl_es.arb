@@ -601,6 +601,15 @@
     "view_document": "Ver documento",
     "uploaded_approved": "Subido y aprobado",
     "document": "Documento",
-    "documents": "Documentos"
-  
-        }
+    "documents": "Documentos",
+  "rideCall": "Llamar",
+  "noDriversNearbyTitle": "No hay conductores cerca",
+  "noDriversNearbyBody": "No pudimos encontrar un conductor para este viaje en este momento.",
+  "noDriversNearbyHint": "Inténtalo de nuevo en unos momentos o cambia el punto de recogida.",
+  "backToRide": "Volver al viaje",
+  "cancelRideConfirmationTitle": "¿Cancelar este viaje?",
+  "cancelRideSearchBody": "Puedes seguir buscando o cancelar esta solicitud.",
+  "keepSearching": "Seguir buscando",
+    "profilePhoto": "Foto de perfil",
+    "changeProfilePhoto": "Cambiar foto"
+}

@@ -1859,4 +1859,37 @@ class AppLocalizationsSq extends AppLocalizations {
 
   @override
   String get documents => 'Dokumente';
+
+  @override
+  String get rideCall => 'Telefono';
+
+  @override
+  String get noDriversNearbyTitle => 'Nuk ka shoferë pranë';
+
+  @override
+  String get noDriversNearbyBody =>
+      'Nuk gjetëm një shofer për këtë udhëtim tani.';
+
+  @override
+  String get noDriversNearbyHint =>
+      'Provoni përsëri pas pak ose ndryshoni vendin e marrjes.';
+
+  @override
+  String get backToRide => 'Kthehu te udhëtimi';
+
+  @override
+  String get cancelRideConfirmationTitle => 'Ta anuloni këtë udhëtim?';
+
+  @override
+  String get cancelRideSearchBody =>
+      'Mund të vazhdoni kërkimin ose ta anuloni këtë kërkesë.';
+
+  @override
+  String get keepSearching => 'Vazhdo kërkimin';
+
+  @override
+  String get profilePhoto => 'Foto e profilit';
+
+  @override
+  String get changeProfilePhoto => 'Ndrysho foton';
 }

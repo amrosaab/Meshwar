@@ -37,6 +37,14 @@
 				<string>com.googleusercontent.apps.625488459506-jkm43il4qhb01d6cb1g58ic1loj9luea</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app-1-625488459506-ios-313437c73f266fe0abc26b</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
@@ -55,8 +63,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Allow access to camera to capture photos for updating profile picture</string>
 	<key>NSContactsUsageDescription</key>
-	<string>Meshwar accesses your contacts so you can quickly select an emergency contact to share your live trip status with, and invite friends to join Meshwar.&quot;
-(Adjust based on the actual feature — if it&apos;s only for emergency contacts, drop the &quot;invite friends&quot; part; if it&apos;s only for inviting friends, drop the emergency contact part. Apple wants the string to match the real feature exactly.)</string>
+	<string>Meshwar accesses your contacts so you can quickly select an emergency contact to share your live trip status with, and invite friends to join Meshwar." (Adjust based on the actual feature — if it's only for emergency contacts, drop the "invite friends" part; if it's only for inviting friends, drop the emergency contact part. Apple wants the string to match the real feature exactly.)</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Program requires GPS to track cars and get ride</string>
 	<key>NSLocationAlwaysUsageDescription</key>
@@ -69,6 +76,32 @@
 	<string>Meshwar uses your microphone during in-app voice calls between riders and drivers to coordinate pickup and drop-off details.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Allow access to photo library to pick photos for updating profile picture</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>UIWindowScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>flutter</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+					<key>UISceneStoryboardFile</key>
+					<string>Main</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIFileSharingEnabled</key>
@@ -77,6 +110,8 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>UIStatusBarHidden</key>
+	<false/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

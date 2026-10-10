@@ -28,7 +28,7 @@ class SelectCountryWidget extends StatelessWidget {
           return SafeArea(
             child: ClipRRect(
               borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(24)),
+                  const BorderRadius.vertical(top: Radius.circular(24)),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
@@ -73,9 +73,9 @@ class SelectCountryWidget extends StatelessWidget {
                                     .textTheme
                                     .bodySmall!
                                     .copyWith(
-                                    color:
-                                    Theme.of(context).primaryColorDark,
-                                    fontWeight: FontWeight.bold),
+                                        color:
+                                            Theme.of(context).primaryColorDark,
+                                        fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
@@ -92,7 +92,7 @@ class SelectCountryWidget extends StatelessWidget {
                           onSubmitted: (p0) =>
                               context.read<AuthBloc>().add(AuthUpdateEvent()),
                           suffixConstraints:
-                          BoxConstraints(maxWidth: size.width * 0.1),
+                              BoxConstraints(maxWidth: size.width * 0.1),
                           suffixIcon: InkWell(
                             onTap: () {
                               context.read<AuthBloc>().searchController.clear();
@@ -108,21 +108,21 @@ class SelectCountryWidget extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      SizedBox(
-                        height: size.height * 0.75,
+                      Expanded(
                         child: ListView.builder(
                           itemCount: countries.length,
-                          shrinkWrap: true,
                           physics: const AlwaysScrollableScrollPhysics(),
                           itemBuilder: (con, index) {
                             var countryData = countries.elementAt(index);
-                            if (countryData.name.toLowerCase().toString().contains(
-                                context
-                                    .read<AuthBloc>()
-                                    .searchController
-                                    .text
+                            if (countryData.name
                                     .toLowerCase()
-                                    .toString()) ||
+                                    .toString()
+                                    .contains(context
+                                        .read<AuthBloc>()
+                                        .searchController
+                                        .text
+                                        .toLowerCase()
+                                        .toString()) ||
                                 countryData.dialCode.toString().contains(context
                                     .read<AuthBloc>()
                                     .searchController
@@ -141,7 +141,7 @@ class SelectCountryWidget extends StatelessWidget {
                                     context.read<AuthBloc>().dialMaxLength =
                                         countryData.dialMaxLength;
                                     context.read<AuthBloc>().flagImage =
-                                    countryData.flag!;
+                                        countryData.flag!;
                                     context
                                         .read<AuthBloc>()
                                         .searchController
@@ -153,7 +153,7 @@ class SelectCountryWidget extends StatelessWidget {
                                   },
                                   child: Padding(
                                     padding:
-                                    const EdgeInsets.symmetric(vertical: 4),
+                                        const EdgeInsets.symmetric(vertical: 4),
                                     child: Row(
                                       children: [
                                         Container(
@@ -164,23 +164,23 @@ class SelectCountryWidget extends StatelessWidget {
                                             shape: BoxShape.rectangle,
                                             color: AppColors.darkGrey,
                                             borderRadius:
-                                            BorderRadius.circular(5),
+                                                BorderRadius.circular(5),
                                           ),
                                           child: ClipRRect(
                                             borderRadius:
-                                            BorderRadius.circular(5),
+                                                BorderRadius.circular(5),
                                             child: CachedNetworkImage(
                                               imageUrl: countryData.flag!,
                                               width: 30,
                                               height: 20,
                                               fit: BoxFit.cover,
                                               placeholder: (context, url) =>
-                                              const Center(
+                                                  const Center(
                                                 child: Loader(),
                                               ),
                                               errorWidget:
                                                   (context, url, error) =>
-                                              const Center(
+                                                      const Center(
                                                 child: Text(""),
                                               ),
                                             ),

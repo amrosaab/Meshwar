@@ -6,7 +6,8 @@ import 'dart:math' as math;
 import 'package:uuid/uuid.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' hide PermissionStatus;
-import 'package:flutter_contacts/flutter_contacts.dart' as fc show PermissionStatus;
+import 'package:flutter_contacts/flutter_contacts.dart' as fc
+    show PermissionStatus;
 
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -37,6 +38,7 @@ import '../domain/models/user_details_model.dart';
 import '../domain/models/stop_address_model.dart';
 import '../presentation/widgets/contact_local_storage.dart';
 import '../../../common/vehicle_marker_helper.dart';
+import '../../../common/sedan_pose.dart';
 import 'usecase/home_usecases.dart';
 
 part 'home_event.dart';
@@ -44,6 +46,16 @@ part 'home_event.dart';
 part 'home_state.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
+  // GetLocationPermissionEvent has no transformer, so bloc processes
+  // concurrent add()s of it in parallel rather than queuing them — and
+  // onMapCreated (which triggers it via assignController) can fire more
+  // than once. Two overlapping getLocationPermission calls each starting
+  // their own Geolocator.requestPermission() crashes with "A request for
+  // location permissions is already running" (geolocator only allows one
+  // in-flight request at a time). Sharing one in-flight Future instead of
+  // starting a second lets every caller resolve against the same result.
+  Future<LocationPermission>? _pendingLocationPermissionRequest;
+
   String textDirection = 'ltr';
   String languageCode = '';
   GoogleMapController? googleMapController;
@@ -290,7 +302,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     focusNodeKeys = List.generate(
       addressList.length,
-          (index) => GlobalKey(),
+      (index) => GlobalKey(),
     );
   }
 
@@ -363,7 +375,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final now = DateTime.now();
     final retryAt = _rateLimitedUntil ?? now.add(_userDetailsRetryDelay);
     final delay =
-    retryAt.isAfter(now) ? retryAt.difference(now) : Duration.zero;
+        retryAt.isAfter(now) ? retryAt.difference(now) : Duration.zero;
 
     _userDetailsRetryTimer = Timer(delay, () {
       _userDetailsRetryTimer = null;
@@ -396,7 +408,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   void updateFocusNodeKeys() {
     focusNodeKeys = List.generate(
       addressList.length,
-          (index) => GlobalKey(),
+      (index) => GlobalKey(),
     );
   }
 
@@ -447,22 +459,24 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         for (var element in driverData) {
           if (element['is_active'] == 1 && element['is_available'] == true) {
             if ((choosenTransportType == 0 &&
-                element['transport_type'] == 'taxi') ||
+                    element['transport_type'] == 'taxi') ||
                 (choosenTransportType == 1 &&
                     element['transport_type'] == 'delivery') ||
                 element['transport_type'] == 'bidding' ||
                 element['transport_type'] == 'both') {
               DateTime dt =
-              DateTime.fromMillisecondsSinceEpoch(element['updated_at']);
+                  DateTime.fromMillisecondsSinceEpoch(element['updated_at']);
 
               if (DateTime.now().difference(dt).inMinutes <= 2) {
                 final String driverId = element['id'].toString();
                 final String iconType = element['vehicle_type_icon'].toString();
-                
+
                 // Prioritize 'heading' (compass) over 'bearing' (movement direction)
-                final double? incomingBearing = element['heading'] != null 
-                    ? double.tryParse(element['heading'].toString()) 
-                    : (element['bearing'] != null ? double.tryParse(element['bearing'].toString()) : null);
+                final double? incomingBearing = element['heading'] != null
+                    ? double.tryParse(element['heading'].toString())
+                    : (element['bearing'] != null
+                        ? double.tryParse(element['bearing'].toString())
+                        : null);
 
                 final lastMarker = markerList.lastWhere(
                   (e) => e.markerId.value.contains('marker#$driverId#'),
@@ -474,15 +488,20 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                   final double rotation = incomingBearing ?? 0.0;
                   markerList.add(Marker(
                     markerId: MarkerId('marker#$driverId#$iconType'),
-                    rotation: VehicleMarkerHelper.isSpriteBased(iconType) ? 0.0 : rotation,
+                    rotation: VehicleMarkerHelper.sourceRotation(iconType, rotation),
                     position: LatLng(element['l'][0], element['l'][1]),
-                    icon: VehicleMarkerHelper.getMarker(iconType, bearing: rotation),
+                    icon: VehicleMarkerHelper.getMarker(iconType,
+                        bearing: rotation),
                   ));
-                  if (incomingBearing != null) myBearings[driverId] = incomingBearing;
+                  if (incomingBearing != null)
+                    myBearings[driverId] = incomingBearing;
                 } else {
                   // Existing driver, check for movement OR rotation change
-                  bool hasMoved = lastMarker.position.latitude != element['l'][0] || lastMarker.position.longitude != element['l'][1];
-                  bool hasRotated = incomingBearing != null && (myBearings[driverId] ?? 0.0) != incomingBearing;
+                  bool hasMoved =
+                      lastMarker.position.latitude != element['l'][0] ||
+                          lastMarker.position.longitude != element['l'][1];
+                  bool hasRotated = incomingBearing != null &&
+                      (myBearings[driverId] ?? 0.0) != incomingBearing;
 
                   if (hasMoved || hasRotated) {
                     var dist = calculateDistance(
@@ -492,7 +511,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                       lon2: double.parse(element['l'][1].toString()),
                       unit: 'km',
                     );
-                    
+
                     // If it moved more than 2 meters OR it's just a rotation update
                     if (dist > 0.002 || (hasRotated && !hasMoved)) {
                       animateCar(
@@ -503,7 +522,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                         vsync,
                         googleMapController,
                         lastMarker.markerId.value,
-                        VehicleMarkerHelper.getMarker(iconType, bearing: incomingBearing ?? (myBearings[driverId] ?? 0.0)),
+                        VehicleMarkerHelper.getMarker(iconType,
+                            bearing: incomingBearing ??
+                                (myBearings[driverId] ?? 0.0)),
+                        targetBearingOverride: incomingBearing,
                       );
                     }
                   }
@@ -513,7 +535,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           } else {
             if (markerList
                 .where((e) => e.markerId.toString().contains(
-                'marker#${element['id']}#${element['vehicle_type_icon']}'))
+                    'marker#${element['id']}#${element['vehicle_type_icon']}'))
                 .isNotEmpty) {
               markerList.removeWhere((e) => e.markerId.toString().contains(
                   'marker#${element['id']}#${element['vehicle_type_icon']}'));
@@ -543,9 +565,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       GetOnGoingRidesEvent event, Emitter<HomeState> emit) async {
     // isLoading = true;
     final data =
-    await serviceLocator<HomeUsecase>().getOnGoingRides(historyFilter: '1');
+        await serviceLocator<HomeUsecase>().getOnGoingRides(historyFilter: '1');
     data.fold(
-          (error) {
+      (error) {
         debugPrint(error.toString());
         // isLoading = false;
         if (error.message == 'logout') {
@@ -562,7 +584,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           emit(OnGoingRidesFailureState());
         }
       },
-          (success) {
+      (success) {
         debugPrint('OnGoingRides :${success.data}');
         onGoingRideList = success.data;
         isMultipleRide = onGoingRideList.any((ride) => ride.isCompleted != 1);
@@ -604,9 +626,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           name: tripData.driverDetail.data.name,
           number: tripData.driverDetail.data.mobile,
           isAirportLocation:
-          (tripData.pickAddress.toLowerCase().contains('airport'))
-              ? true
-              : false,
+              (tripData.pickAddress.toLowerCase().contains('airport'))
+                  ? true
+                  : false,
           pickup: true));
       if (tripData.requestStops.data.isNotEmpty) {
         for (var i = 0; i < tripData.requestStops.data.length; i++) {
@@ -619,8 +641,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             number: tripData.requestStops.data[i].pocMobile,
             instructions: tripData.requestStops.data[i].pocInstruction,
             isAirportLocation: (tripData.requestStops.data[i].address
-                .toLowerCase()
-                .contains('airport'))
+                    .toLowerCase()
+                    .contains('airport'))
                 ? true
                 : false,
             pickup: false,
@@ -636,9 +658,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             name: tripData.driverDetail.data.name,
             number: tripData.driverDetail.data.mobile,
             isAirportLocation:
-            (tripData.dropAddress.toLowerCase().contains('airport'))
-                ? true
-                : false,
+                (tripData.dropAddress.toLowerCase().contains('airport'))
+                    ? true
+                    : false,
             pickup: false,
           ));
         }
@@ -695,9 +717,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Future<void> locateMe(LocateMeEvent event, Emitter<HomeState> emit) async {
     isOnCurrentLocation = true;
     await Permission.location.request();
+    // Each await below is a point where the page (and this bloc) can have
+    // been closed in the meantime — e.g. the app was backgrounded/reopened
+    // mid-request. add()/emit() after close throws "Bad state: Cannot add
+    // new events after calling close", so bail out as soon as that happens.
+    if (isClosed) return;
     PermissionStatus status = await Permission.location.status;
+    if (isClosed) return;
     if (status.isGranted || status.isLimited) {
       Position? position = await Geolocator.getLastKnownPosition();
+      if (isClosed) return;
       if (position != null) {
         double lat = position.latitude;
         double long = position.longitude;
@@ -713,10 +742,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
               (fmController as fm.MapControllerImpl).value.camera != null) {
             fmController!.move(fmlt.LatLng(lat, long), 15);
           }
-          add(UpdateLocationEvent(
-              isFromHomePage: true,
-              latLng: currentLatLng,
-              mapType: event.mapType));
         }
         add(UpdateLocationEvent(
             isFromHomePage: true,
@@ -768,9 +793,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         // If it's a category default, check for auto-selection
         if (selectedServiceIndex == 0 || selectedServiceIndex == 1) {
           final categoryModules =
-          rideModules.where((m) => m.transportType == transportType);
+              rideModules.where((m) => m.transportType == transportType);
           final hasNormal =
-          categoryModules.any((m) => m.serviceType == 'normal');
+              categoryModules.any((m) => m.serviceType == 'normal');
           if (!hasNormal && categoryModules.isNotEmpty) {
             selectedServiceType = categoryModules.first;
             selectedServiceIndex = getServiceIndex(selectedServiceType!);
@@ -815,12 +840,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     if (val.isNotEmpty) {
       List<dynamic> decodedList = jsonDecode(val);
       List<AddressModel> decodedData =
-      decodedList.map((item) => AddressModel.fromJson(item)).toList();
+          decodedList.map((item) => AddressModel.fromJson(item)).toList();
       recentSearchPlaces = decodedData;
     }
     final data = await serviceLocator<HomeUsecase>().userDetails();
     await data.fold(
-          (error) {
+      (error) {
         debugPrint(error.toString());
         if (error.message == 'logout') {
           _clearCachedHomeSnapshot();
@@ -837,7 +862,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           emit(HomeLoadingStopState());
         }
       },
-          (success) async {
+      (success) async {
         _cancelUserDetailsRetry();
         _rateLimitedUntil = null;
         userData = success.data;
@@ -859,7 +884,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         }
 
         if ((userData!.onTripRequest == null ||
-            userData!.onTripRequest == "") ||
+                userData!.onTripRequest == "") ||
             (userData!.metaRequest == null || userData!.metaRequest == "")) {
           add(LocateMeEvent(mapType: mapType));
         }
@@ -879,7 +904,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           isFavoriteTabSelected = true;
         }
         if ((userData!.onTripRequest != null &&
-            userData!.onTripRequest != "") ||
+                userData!.onTripRequest != "") ||
             (userData!.metaRequest != null && userData!.metaRequest != "")) {
           OnTripRequestData tripData = userData!.onTripRequest != ""
               ? userData!.onTripRequest.data
@@ -897,9 +922,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                   ? tripData.userDetail!.data.mobile
                   : '',
               isAirportLocation:
-              (tripData.pickAddress.toLowerCase().contains('airport'))
-                  ? true
-                  : false,
+                  (tripData.pickAddress.toLowerCase().contains('airport'))
+                      ? true
+                      : false,
               pickup: true));
           if (tripData.requestStops.data.isNotEmpty) {
             for (var i = 0; i < tripData.requestStops.data.length; i++) {
@@ -911,8 +936,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 name: tripData.requestStops.data[i].pocName,
                 number: tripData.requestStops.data[i].pocMobile,
                 isAirportLocation: (tripData.requestStops.data[i].address
-                    .toLowerCase()
-                    .contains('airport'))
+                        .toLowerCase()
+                        .contains('airport'))
                     ? true
                     : false,
                 instructions: tripData.requestStops.data[i].pocInstruction,
@@ -927,9 +952,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 lat: double.parse(tripData.dropLat),
                 lng: double.parse(tripData.dropLng),
                 isAirportLocation:
-                (tripData.dropAddress.toLowerCase().contains('airport'))
-                    ? true
-                    : false,
+                    (tripData.dropAddress.toLowerCase().contains('airport'))
+                        ? true
+                        : false,
                 name: (tripData.userDetail != null)
                     ? tripData.userDetail!.data.name
                     : '',
@@ -995,7 +1020,19 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           mapType: mapType));
     } else {
       LocationPermission permission;
-      permission = await Geolocator.requestPermission();
+      if (_pendingLocationPermissionRequest != null) {
+        permission = await _pendingLocationPermissionRequest!;
+      } else {
+        final request = Geolocator.requestPermission();
+        _pendingLocationPermissionRequest = request;
+        try {
+          permission = await request;
+        } finally {
+          if (identical(_pendingLocationPermissionRequest, request)) {
+            _pendingLocationPermissionRequest = null;
+          }
+        }
+      }
 
       if (permission == LocationPermission.always ||
           permission == LocationPermission.whileInUse) {
@@ -1093,7 +1130,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         } else {
           showToast(
               message:
-              'allow location permission to get your current location');
+                  'allow location permission to get your current location');
           emit(GetLocationPermissionState());
         }
       }
@@ -1101,9 +1138,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> updateLocation(
-      UpdateLocationEvent event,
-      Emitter<HomeState> emit,
-      ) async {
+    UpdateLocationEvent event,
+    Emitter<HomeState> emit,
+  ) async {
     if (event.latLng.latitude == 0.0 || event.latLng.longitude == 0.0) {
       emit(UpdateLocationState());
       return;
@@ -1116,13 +1153,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     );
 
     result.fold(
-          (error) {
+      (error) {
         debugPrint('Address error: $error');
         currentLocation = '';
         pickupAddressController.text = '';
         emit(HomeUpdateState());
       },
-          (success) {
+      (success) {
         final rawAddress = success.trim();
 
         if (rawAddress.isEmpty) {
@@ -1147,21 +1184,27 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
               name: userData?.name ?? '',
               number: userData?.mobile ?? '',
               isAirportLocation:
-              currentLocation.toLowerCase().contains('airport'),
+                  currentLocation.toLowerCase().contains('airport'),
               pickup: true,
             ),
           );
 
-          add(
-            ServiceLocationVerifyEvent(
-              isFromHomePage: event.isFromHomePage,
-              rideType: 'taxi',
-              address: pickupAddressList,
-            ),
-          );
+          // getAddressFromLatLng above is awaited, so the user may have
+          // already navigated away (closing this bloc) by the time this
+          // callback runs — add()ing to a closed bloc throws "Cannot add
+          // new events after calling close".
+          if (!isClosed) {
+            add(
+              ServiceLocationVerifyEvent(
+                isFromHomePage: event.isFromHomePage,
+                rideType: 'taxi',
+                address: pickupAddressList,
+              ),
+            );
 
-          if (nearByVechileSubscription == null) {
-            add(StreamRequestEvent());
+            if (nearByVechileSubscription == null) {
+              add(StreamRequestEvent());
+            }
           }
         }
       },
@@ -1228,7 +1271,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     // Auto-select sub-service if normal is missing or only one exists
     if (event.serviceTypeIndex == 0 || event.serviceTypeIndex == 1) {
       final categoryModules =
-      rideModules.where((m) => m.transportType == event.transportType);
+          rideModules.where((m) => m.transportType == event.transportType);
       if (categoryModules.isNotEmpty) {
         final hasNormal = categoryModules.any((m) => m.serviceType == 'normal');
         if (!hasNormal) {
@@ -1284,9 +1327,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           name: (userData != null) ? userData!.name : '',
           number: (userData != null) ? userData!.mobile : '',
           isAirportLocation:
-          (event.arg.pickupAddress!.toLowerCase().contains('airport'))
-              ? true
-              : false,
+              (event.arg.pickupAddress!.toLowerCase().contains('airport'))
+                  ? true
+                  : false,
           pickup: true));
       addressTextControllerList
           .add(TextEditingController(text: event.arg.pickupAddress));
@@ -1312,9 +1355,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           name: (userData != null) ? userData!.name : '',
           number: (userData != null) ? userData!.mobile : '',
           isAirportLocation:
-          (event.arg.dropAddress!.toLowerCase().contains('airport'))
-              ? true
-              : false,
+              (event.arg.dropAddress!.toLowerCase().contains('airport'))
+                  ? true
+                  : false,
           pickup: false));
       addressTextControllerList
           .add(TextEditingController(text: event.arg.dropAddress));
@@ -1350,7 +1393,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     if (val.isNotEmpty) {
       List<dynamic> decodedList = jsonDecode(val);
       List<AddressModel> decodedData =
-      decodedList.map((item) => AddressModel.fromJson(item)).toList();
+          decodedList.map((item) => AddressModel.fromJson(item)).toList();
       recentSearchPlaces = decodedData;
       add(RecentRoutesEvent());
     }
@@ -1361,18 +1404,18 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       RecentRoutesEvent event, Emitter<HomeState> emit) async {
     final data = await serviceLocator<HomeUsecase>().getRecentRoutes();
     data.fold(
-          (error) {
+      (error) {
         debugPrint(error.toString());
       },
-          (success) {
+      (success) {
         recentRoutes = success.data;
         if (recentRoutes.isNotEmpty) {
           if (recentRoutes.any((element) =>
-          element.searchStops.data.isNotEmpty &&
+              element.searchStops.data.isNotEmpty &&
               element.searchStops.data.length == 2)) {
             recentRouteHeight = 0.4;
           } else if (recentRoutes.any((element) =>
-          element.searchStops.data.isNotEmpty &&
+              element.searchStops.data.isNotEmpty &&
               element.searchStops.data.length == 1)) {
             recentRouteHeight = 0.3;
           } else {
@@ -1413,7 +1456,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             name: event.selectedRoute.searchStops.data[i].pocName,
             number: event.selectedRoute.searchStops.data[i].pocMobile,
             instructions:
-            event.selectedRoute.searchStops.data[i].pocInstruction,
+                event.selectedRoute.searchStops.data[i].pocInstruction,
             pickup: false));
       }
     }
@@ -1461,20 +1504,20 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // Filter cached places
       final matchingCachedPlaces = cachedPlaces
           .where((element) => element.address
-          .toLowerCase()
-          .contains(event.searchText.toLowerCase()))
+              .toLowerCase()
+              .contains(event.searchText.toLowerCase()))
           .toList();
 
       if (matchingCachedPlaces.isNotEmpty && mapType == 'google_map') {
         autoSearchPlaces.clear();
         autoSearchPlaces.addAll(matchingCachedPlaces.map((e) => AddressModel(
-          orderId: e.orderId,
-          address: e.address,
-          lat: e.lat,
-          lng: e.lng,
-          pickup: e.pickup,
-          isAirportLocation: e.isAirportLocation,
-        )));
+              orderId: e.orderId,
+              address: e.address,
+              lat: e.lat,
+              lng: e.lng,
+              pickup: e.pickup,
+              isAirportLocation: e.isAirportLocation,
+            )));
         searchInfoMessage = AppLocalizations.of(event.context)!.searchResult;
         emit(SearchOnChangeState());
         return;
@@ -1489,12 +1532,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           languageCode: languageCode,
         );
         data.fold(
-              (error) {
+          (error) {
             debugPrint(error.toString());
             autoSearchPlaces.clear();
             emit(SearchOnChangeState());
           },
-              (success) async {
+          (success) async {
             autoSearchPlaces.clear();
             searchInfoMessage =
                 AppLocalizations.of(event.context)!.searchResult;
@@ -1508,7 +1551,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                   lng: 0,
                   pickup: false,
                   isAirportLocation:
-                  element['description'].toLowerCase().contains('airport'),
+                      element['description'].toLowerCase().contains('airport'),
                 );
                 places.add(place);
                 autoSearchPlaces.add(AddressModel(
@@ -1532,7 +1575,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                   lng: double.parse(element['lon']),
                   pickup: false,
                   isAirportLocation:
-                  element['display_name'].toLowerCase().contains('airport'),
+                      element['display_name'].toLowerCase().contains('airport'),
                 );
                 places.add(place);
                 autoSearchPlaces.add(AddressModel(
@@ -1576,13 +1619,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     if ((event.address.lat == 0 || event.address.lat == 0.0) &&
         (event.address.lng == 0 || event.address.lng == 0.0) &&
         mapType == 'google_map') {
-      final data = await serviceLocator<HomeUsecase>().getAutoCompletePlaceLatLng(
-          placeId: event.address.orderId, sessionToken: placesSessionToken);
+      final data = await serviceLocator<HomeUsecase>()
+          .getAutoCompletePlaceLatLng(
+              placeId: event.address.orderId, sessionToken: placesSessionToken);
       data.fold(
-            (error) {
+        (error) {
           debugPrint(error.toString());
         },
-            (success) {
+        (success) {
           latLng = success;
         },
       );
@@ -1595,7 +1639,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       recentSearchPlaces.removeAt(0);
     }
     recentSearchPlaces.removeWhere(
-            (element) => element.orderId.contains(event.address.orderId));
+        (element) => element.orderId.contains(event.address.orderId));
     recentSearchPlaces.add(AddressModel(
         orderId: event.address.orderId,
         name: event.address.name,
@@ -1662,7 +1706,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         transportType: event.transportType,
         serviceTypeIndex: event.serviceTypeIndex,
         address: recentSearchPlaces.elementAt(recentSearchPlaces.indexWhere(
-                (element) => element.orderId == event.address.orderId))));
+            (element) => element.orderId == event.address.orderId))));
   }
 
   FutureOr<void> favPlaceSelect(
@@ -1675,9 +1719,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         lat: double.parse(event.address.pickLat),
         lng: double.parse(event.address.pickLng),
         isAirportLocation:
-        (event.address.pickAddress.toLowerCase().contains('airport'))
-            ? true
-            : false,
+            (event.address.pickAddress.toLowerCase().contains('airport'))
+                ? true
+                : false,
         name: (userData != null) ? userData!.name : '',
         number: (userData != null) ? userData!.mobile : '',
         pickup: event.isPickupSelect);
@@ -1691,7 +1735,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       if (stopAddressList
           .any((element) => element.orderId == selectedAddress.orderId)) {
         stopAddressList.removeWhere(
-                (element) => element.orderId == selectedAddress.orderId);
+            (element) => element.orderId == selectedAddress.orderId);
       }
       stopAddressList.add(AddressModel(
           orderId: selectedAddress.orderId,
@@ -1760,14 +1804,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       emit(HomeLoadingStartState());
       if (contactsList.isEmpty) {
         final contactsPermissionStatus =
-        await FlutterContacts.permissions.request(PermissionType.readWrite);
+            await FlutterContacts.permissions.request(PermissionType.readWrite);
         if (contactsPermissionStatus == fc.PermissionStatus.granted) {
           List<Contact> contacts =
-          await FlutterContacts.getAll(properties: ContactProperties.all);
+              await FlutterContacts.getAll(properties: ContactProperties.all);
           for (var contact in contacts) {
             for (var phone in contact.phones) {
               contactsList.add(ContactsModel(
-                name: contact.displayName??'',
+                name: contact.displayName ?? '',
                 number: phone.number,
               ));
             }
@@ -1807,7 +1851,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     if (val.isNotEmpty) {
       List<dynamic> decodedList = jsonDecode(val);
       List<AddressModel> decodedData =
-      decodedList.map((item) => AddressModel.fromJson(item)).toList();
+          decodedList.map((item) => AddressModel.fromJson(item)).toList();
       recentSearchPlaces = decodedData;
     }
 
@@ -1839,9 +1883,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             lat: currentLatLng.latitude,
             lng: currentLatLng.longitude,
             isAirportLocation:
-            (currentLocation.toLowerCase().toString().contains('airport'))
-                ? true
-                : false,
+                (currentLocation.toLowerCase().toString().contains('airport'))
+                    ? true
+                    : false,
             name: (userData != null) ? userData!.name : '',
             number: (userData != null) ? userData!.mobile : '',
             pickup: event.isPickUpEdit)));
@@ -1865,13 +1909,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     dynamic latLng;
     if ((event.address.lat == 0 || event.address.lat == 0.0) &&
         (event.address.lng == 0 || event.address.lng == 0.0)) {
-      final data = await serviceLocator<HomeUsecase>().getAutoCompletePlaceLatLng(
-          placeId: event.address.orderId, sessionToken: placesSessionToken);
+      final data = await serviceLocator<HomeUsecase>()
+          .getAutoCompletePlaceLatLng(
+              placeId: event.address.orderId, sessionToken: placesSessionToken);
       data.fold(
-            (error) {
+        (error) {
           debugPrint(error.toString());
         },
-            (success) {
+        (success) {
           latLng = success;
         },
       );
@@ -1887,7 +1932,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         ? LatLng(latLng.latitude, latLng.longitude)
         : LatLng(event.address.lat, event.address.lng);
     recentSearchPlaces.removeWhere(
-            (element) => element.orderId.contains(event.address.orderId));
+        (element) => element.orderId.contains(event.address.orderId));
     if (recentSearchPlaces.length == 4) {
       recentSearchPlaces.removeAt(0);
     }
@@ -2013,7 +2058,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final data = await serviceLocator<HomeUsecase>().serviceLocationVerify(
         rideType: event.rideType, address: event.address);
     data.fold(
-          (error) {
+      (error) {
         debugPrint(error.toString());
         if (error.message == 'logout') {
           emit(LogoutState());
@@ -2021,7 +2066,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           emit(HomeUpdateState());
         }
       },
-          (success) {
+      (success) {
         if (success["success"] == false) {
           if (event.isFromHomePage != null && event.isFromHomePage!) {
             serviceAvailable = false;
@@ -2059,21 +2104,36 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   animateCar(
-      double fromLat, //Starting latitude
-      double fromLong, //Starting longitude
-      double toLat, //Ending latitude
-      double toLong, //Ending longitude
-      TickerProvider provider, //Ticker provider of the widget. This is used for animation
-      GoogleMapController? controller, //Google map controller of our widget
-      markerid,
-      icon,
-      ) async {
-    
+    double fromLat, //Starting latitude
+    double fromLong, //Starting longitude
+    double toLat, //Ending latitude
+    double toLong, //Ending longitude
+    TickerProvider
+        provider, //Ticker provider of the widget. This is used for animation
+    GoogleMapController? controller, //Google map controller of our widget
+    markerid,
+    icon, {
+    double? targetBearingOverride,
+  }) async {
     final String driverId = markerid.toString().split('#')[1];
-    final double startRotation = myBearings[driverId] ?? 0.0;
-    
+    final displayed = markerList.lastWhere(
+      (marker) => marker.markerId.value == markerid.toString(),
+      orElse: () => const Marker(markerId: MarkerId('none')),
+    );
+    final double startRotation = VehicleMarkerHelper.worldBearingFor(displayed) ??
+        (myBearings[driverId] ?? 0.0);
+    final double startLat = displayed.markerId.value == 'none'
+        ? fromLat : displayed.position.latitude;
+    final double startLng = displayed.markerId.value == 'none'
+        ? fromLong : displayed.position.longitude;
+
     // Calculate new target bearing from movement
-    double targetBearing = getBearing(LatLng(fromLat, fromLong), LatLng(toLat, toLong));
+    double targetBearing = targetBearingOverride ??
+        getBearing(LatLng(fromLat, fromLong), LatLng(toLat, toLong));
+    if (fromLat == toLat && fromLong == toLong && targetBearingOverride == null) {
+      targetBearing = startRotation;
+    }
+    targetBearing = SedanPose.normalize(targetBearing);
     myBearings[driverId] = targetBearing;
 
     animationController?.dispose();
@@ -2083,35 +2143,35 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     );
 
     Tween<double> tween = Tween(begin: 0, end: 1);
-    
+
     // We want to animate from current rotation to target bearing using the shortest path
-    double rotationDiff = (targetBearing - startRotation + 180) % 360 - 180;
-    if (rotationDiff < -180) rotationDiff += 360;
+
 
     _animation = tween.animate(CurvedAnimation(
       parent: animationController!,
       curve: Curves.linear,
-    ))..addListener(() async {
+    ))
+      ..addListener(() async {
         markerList.removeWhere((element) => element.markerId.value == markerid);
 
         final v = _animation!.value;
 
         // Interpolate position
-        double lng = v * toLong + (1 - v) * fromLong;
-        double lat = v * toLat + (1 - v) * fromLat;
+        double lng = v * toLong + (1 - v) * startLng;
+        double lat = v * toLat + (1 - v) * startLat;
         LatLng newPos = LatLng(lat, lng);
-        
+
         // Interpolate rotation smoothly
-        double currentRotation = (startRotation + (rotationDiff * v)) % 360;
-        
+        double currentRotation = SedanPose.interpolateBearing(startRotation, targetBearing, v);
+
         final String iconType = markerid.toString().split('#')[2];
-        final bool isSprite = VehicleMarkerHelper.isSpriteBased(iconType);
 
         final carMarker = Marker(
             markerId: MarkerId(markerid.toString()),
             position: newPos,
-            icon: VehicleMarkerHelper.getMarker(iconType, bearing: currentRotation),
-            rotation: isSprite ? 0.0 : currentRotation,
+            icon: VehicleMarkerHelper.getMarker(iconType,
+                bearing: currentRotation),
+            rotation: VehicleMarkerHelper.sourceRotation(iconType, currentRotation),
             anchor: const Offset(0.5, 0.5),
             flat: true,
             draggable: false);
@@ -2124,8 +2184,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     //Starting the animation
     await animationController!.forward();
-    
-    if (controller != null && userData != null && (userData!.onTripRequest != "" || userData!.metaRequest != "")) {
+
+    if (controller != null &&
+        userData != null &&
+        (userData!.onTripRequest != "" || userData!.metaRequest != "")) {
       controller.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
         target: LatLng(toLat, toLong),
         tilt: 45.0,
@@ -2200,9 +2262,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   void _selectSavedContactRadio(
-      SelectSavedContactRadioEvent event,
-      Emitter<HomeState> emit,
-      ) {
+    SelectSavedContactRadioEvent event,
+    Emitter<HomeState> emit,
+  ) {
     selectedSavedContactIndex = event.index;
     isMyselfSelected = false;
 
@@ -2215,9 +2277,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   void _selectMyselfRadio(
-      SelectMyselfRadioEvent event,
-      Emitter<HomeState> emit,
-      ) {
+    SelectMyselfRadioEvent event,
+    Emitter<HomeState> emit,
+  ) {
     isMyselfSelected = true;
     selectedSavedContactIndex = null;
 
@@ -2269,7 +2331,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final data = await serviceLocator<HomeUsecase>()
         .getUpcomingRides(historyFilter: event.historyFilter);
     data.fold(
-          (error) {
+      (error) {
         // isLoading = false;
         if (error.message == 'logout') {
           emit(LogoutState());
@@ -2277,7 +2339,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           emit(UpcomingRidesFailureState());
         }
       },
-          (success) {
+      (success) {
         debugPrint('OnUpcomingRides :${success.data}');
         upcomingRideList = success.data;
         // isLoading = false;

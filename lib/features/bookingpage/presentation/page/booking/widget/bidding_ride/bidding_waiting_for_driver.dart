@@ -10,6 +10,7 @@ import '../../../../../../../core/utils/custom_text.dart';
 import '../../../../../../../l10n/app_localizations.dart';
 import '../../../../../application/booking_bloc.dart';
 import '../custom_timer.dart';
+import '../cancel_ride_confirmation_content.dart';
 
 class BiddingWaitingForDriverConfirmation extends StatelessWidget {
   final double maximumTime;
@@ -466,146 +467,33 @@ class BiddingWaitingForDriverConfirmation extends StatelessWidget {
                               ),
                               child: ElevatedButton(
                                 onPressed: () {
+                                  final bloc = context.read<BookingBloc>();
                                   showModalBottomSheet(
                                     context: context,
                                     isDismissible: true,
                                     isScrollControlled: true,
                                     enableDrag: false,
-                                    backgroundColor: Theme.of(context)
-                                        .scaffoldBackgroundColor,
+                                    useSafeArea: true,
+                                    backgroundColor: Colors.transparent,
                                     shape: const RoundedRectangleBorder(
                                       borderRadius: BorderRadius.vertical(
-                                        top: Radius.circular(20.0),
-                                      ),
+                                          top: Radius.circular(32)),
                                     ),
-                                    builder: (_) {
-                                      return BlocProvider.value(
-                                          value: context.read<BookingBloc>(),
-                                          child: SafeArea(
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(10),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Center(
-                                                      child: Image.asset(
-                                                          AppImages.cancelGif,
-                                                          height: size.width *
-                                                              0.2)),
-                                                  Center(
-                                                    child: MyText(
-                                                      text: AppLocalizations.of(
-                                                              context)!
-                                                          .cancelRide,
-                                                      textStyle: Theme.of(
-                                                              context)
-                                                          .textTheme
-                                                          .displayLarge!
-                                                          .copyWith(
-                                                              color: Theme.of(
-                                                                      context)
-                                                                  .primaryColorDark),
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                      height:
-                                                          size.width * 0.05),
-                                                  Center(
-                                                    child: MyText(
-                                                      text: AppLocalizations.of(
-                                                              context)!
-                                                          .cancelRideText,
-                                                      textStyle:
-                                                          Theme.of(context)
-                                                              .textTheme
-                                                              .titleLarge,
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                      height:
-                                                          size.width * 0.05),
-                                                  Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceEvenly,
-                                                    children: [
-                                                      CustomButton(
-                                                        buttonName:
-                                                            AppLocalizations.of(
-                                                                    context)!
-                                                                .cancelRide,
-                                                        borderRadius: 5,
-                                                        width: size.width * 0.4,
-                                                        height:
-                                                            size.width * 0.1,
-                                                        isBorder: true,
-                                                        buttonColor: Theme.of(
-                                                                context)
-                                                            .scaffoldBackgroundColor,
-                                                        textSize: context
-                                                                    .read<
-                                                                        BookingBloc>()
-                                                                    .languageCode ==
-                                                                'fr'
-                                                            ? 14
-                                                            : null,
-                                                        textColor:
-                                                            Theme.of(context)
-                                                                .primaryColor,
-                                                        onTap: () {
-                                                          context
-                                                              .read<
-                                                                  BookingBloc>()
-                                                              .timerCount(
-                                                                  context,
-                                                                  isNormalRide:
-                                                                      false,
-                                                                  isCloseTimer:
-                                                                      true,
-                                                                  duration: 0);
-                                                          context
-                                                              .read<
-                                                                  BookingBloc>()
-                                                              .add(
-                                                                BookingCancelRequestEvent(
-                                                                    requestId: context
-                                                                        .read<
-                                                                            BookingBloc>()
-                                                                        .requestData!
-                                                                        .id),
-                                                              );
-                                                        },
-                                                      ),
-                                                      CustomButton(
-                                                        buttonName:
-                                                            AppLocalizations.of(
-                                                                    context)!
-                                                                .back,
-                                                        borderRadius: 5,
-                                                        width: size.width * 0.4,
-                                                        height:
-                                                            size.width * 0.1,
-                                                        buttonColor:
-                                                            Theme.of(context)
-                                                                .primaryColor,
-                                                        textColor:
-                                                            AppColors.white,
-                                                        onTap: () {
-                                                          Navigator.pop(
-                                                              context);
-                                                        },
-                                                      )
-                                                    ],
-                                                  ),
-                                                  SizedBox(
-                                                      height: size.width * 0.1),
-                                                ],
-                                              ),
-                                            ),
-                                          ));
-                                    },
+                                    builder: (sheetContext) => CancelRideConfirmationContent(
+                                      onKeepRide: () => Navigator.pop(sheetContext),
+                                      onCancelRide: () {
+                                        if (!context.mounted || bloc.requestData == null) {
+                                          Navigator.pop(sheetContext);
+                                          return;
+                                        }
+                                        bloc.timerCount(context,
+                                            isNormalRide: false,
+                                            isCloseTimer: true,
+                                            duration: 0);
+                                        bloc.add(BookingCancelRequestEvent(
+                                            requestId: bloc.requestData!.id));
+                                      },
+                                    ),
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(

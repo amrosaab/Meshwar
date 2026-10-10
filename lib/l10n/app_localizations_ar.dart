@@ -1829,4 +1829,37 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get documents => 'المستندات';
+
+  @override
+  String get rideCall => 'اتصال';
+
+  @override
+  String get noDriversNearbyTitle => 'لا يوجد سائقون بالقرب منك';
+
+  @override
+  String get noDriversNearbyBody =>
+      'لم نتمكن من العثور على سائق لهذه الرحلة حالياً.';
+
+  @override
+  String get noDriversNearbyHint =>
+      'جرّب مرة أخرى بعد قليل، أو عدّل موقع الانطلاق.';
+
+  @override
+  String get backToRide => 'العودة إلى الرحلة';
+
+  @override
+  String get cancelRideConfirmationTitle => 'هل تريد إلغاء هذه الرحلة؟';
+
+  @override
+  String get cancelRideSearchBody =>
+      'يمكنك مواصلة البحث عن سائق أو إلغاء هذا الطلب.';
+
+  @override
+  String get keepSearching => 'مواصلة البحث';
+
+  @override
+  String get profilePhoto => 'الصورة الشخصية';
+
+  @override
+  String get changeProfilePhoto => 'تغيير الصورة';
 }

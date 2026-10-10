@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../common/app_colors.dart';
-import '../../../../core/utils/custom_button.dart';
 import '../../../../core/utils/custom_loader.dart';
 import '../../../../core/utils/custom_text.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -49,44 +48,76 @@ class _LandingPageState extends State<LandingPage> {
         },
         child: BlocBuilder<OnBoardingBloc, OnBoardingState>(
           builder: (context, state) {
+            final bloc = context.read<OnBoardingBloc>();
             return PopScope(
               canPop: false,
               child: Directionality(
-                textDirection:
-                    context.read<OnBoardingBloc>().textDirection == 'rtl'
-                        ? TextDirection.rtl
-                        : TextDirection.ltr,
+                textDirection: bloc.textDirection == 'rtl'
+                    ? TextDirection.rtl
+                    : TextDirection.ltr,
                 child: Scaffold(
-                  body: (context
-                          .read<OnBoardingBloc>()
-                          .onBoardingData
-                          .isNotEmpty)
-                      ? Stack(
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                  body: bloc.onBoardingData.isNotEmpty
+                      ? Column(
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
+                            // Full-bleed hero — extends under the status bar
+                            // rather than sitting in an inset card, with the
+                            // Skip link floating on top of it (standard
+                            // modern onboarding pattern) instead of
+                            // competing for space with the primary action
+                            // below.
+                            Expanded(
+                              flex: 58,
+                              child: Stack(
+                                fit: StackFit.expand,
                                 children: [
-                                  SizedBox(height: size.height * 0.1),
-                                  Container(
-                                    height: size.height * 0.35,
-                                    width: size.width,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(10),
+                                  buildLandingImageContainer(size, context),
+                                  Positioned.fill(
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.bottomCenter,
+                                          end: Alignment.center,
+                                          colors: [
+                                            Theme.of(context)
+                                                .scaffoldBackgroundColor,
+                                            Theme.of(context)
+                                                .scaffoldBackgroundColor
+                                                .withValues(alpha: 0),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  SizedBox(height: size.height * 0.16),
-                                  buildLandingContentWidget(size, context),
-                                  SizedBox(height: size.height * 0.02),
-                                  buildSkipButton(context, size),
+                                  Positioned(
+                                    top: MediaQuery.paddingOf(context).top +
+                                        12,
+                                    right: 16,
+                                    child: buildSkipLink(context),
+                                  ),
                                 ],
                               ),
                             ),
-                            Positioned(
-                              top: size.height * 0.1,
-                              left: size.width * 0.09,
-                              child: buildLandingImageContainer(size, context),
+                            Expanded(
+                              flex: 42,
+                              child: SafeArea(
+                                top: false,
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                      24, 20, 24, 20),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Expanded(
+                                        child: buildLandingContentWidget(
+                                            size, context),
+                                      ),
+                                      buildPrimaryButton(context, size),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         )
@@ -101,44 +132,66 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   Widget buildLandingContentWidget(Size size, BuildContext context) {
-    return context.read<OnBoardingBloc>().onBoardingData.isNotEmpty
+    final bloc = context.read<OnBoardingBloc>();
+    return bloc.onBoardingData.isNotEmpty
         ? Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
-                height: size.height * 0.20,
-                width: size.width,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  bloc.onBoardingData.length,
+                  (index) {
+                    final isSelected = bloc.onBoardChangeIndex == index;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      height: 8,
+                      width: isSelected ? 24 : 8,
+                      decoration: BoxDecoration(
+                        gradient: isSelected ? AppColors.beaconGradient : null,
+                        color: isSelected ? null : Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+              Expanded(
                 child: PageView.builder(
-                  controller:
-                      context.read<OnBoardingBloc>().contentPageController,
+                  controller: bloc.contentPageController,
                   scrollDirection: Axis.horizontal,
                   physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount:
-                      context.read<OnBoardingBloc>().onBoardingData.length,
+                  itemCount: bloc.onBoardingData.length,
                   itemBuilder: (context, index) {
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         MyText(
-                          text: context
-                              .read<OnBoardingBloc>()
-                              .onBoardingData[index]
-                              .title,
+                          text: bloc.onBoardingData[index].title,
+                          textAlign: TextAlign.center,
                           textStyle: Theme.of(context)
                               .textTheme
                               .bodyLarge!
-                              .copyWith(fontSize: 26),
+                              .copyWith(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.5,
+                              ),
                         ),
-                        SizedBox(height: size.height * 0.02),
+                        const SizedBox(height: 12),
                         MyText(
-                          text: context
-                              .read<OnBoardingBloc>()
-                              .onBoardingData[index]
-                              .description,
+                          text: bloc.onBoardingData[index].description,
                           textStyle: Theme.of(context)
                               .textTheme
                               .bodyMedium!
                               .copyWith(
-                                  fontSize: 14, color: AppColors.hintColor),
+                                fontSize: 15,
+                                height: 1.5,
+                                color: AppColors.hintColor,
+                              ),
                           textAlign: TextAlign.center,
                           maxLines: 5,
                         ),
@@ -146,111 +199,135 @@ class _LandingPageState extends State<LandingPage> {
                     );
                   },
                   onPageChanged: (value) {
-                    context
-                        .read<OnBoardingBloc>()
-                        .imagePageController
-                        .jumpToPage(value);
-                    context
-                        .read<OnBoardingBloc>()
-                        .add(OnBoardingDataChangeEvent(currentIndex: value));
+                    bloc.imagePageController.jumpToPage(value);
+                    bloc.add(OnBoardingDataChangeEvent(currentIndex: value));
                   },
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  context.read<OnBoardingBloc>().onBoardingData.length,
-                  (index) {
-                    bool isSelected =
-                        context.read<OnBoardingBloc>().onBoardChangeIndex ==
-                            index;
-
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      height: 8,
-                      width:
-                          isSelected ? 20 : 8, //  Active indicator = long pill
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? Theme.of(context).primaryColor // Active color
-                            : Colors.grey.shade400, // Inactive dot
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    );
-                  },
-                ),
-              )
             ],
           )
         : const SizedBox();
   }
 
   Widget buildLandingImageContainer(Size size, BuildContext context) {
-    return Container(
-      height: size.height * 0.5,
-      width: size.width * 0.83,
-      decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(10)),
+    final bloc = context.read<OnBoardingBloc>();
+    return ClipRRect(
+      borderRadius:
+          const BorderRadius.vertical(bottom: Radius.circular(28)),
       child: PageView.builder(
-        controller: context.read<OnBoardingBloc>().imagePageController,
+        controller: bloc.imagePageController,
         scrollDirection: Axis.horizontal,
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: context.read<OnBoardingBloc>().onBoardingData.length,
+        itemCount: bloc.onBoardingData.length,
         itemBuilder: (context, index) {
-          return context.read<OnBoardingBloc>().onBoardingData.isNotEmpty
+          return bloc.onBoardingData.isNotEmpty
               ? CachedNetworkImage(
-                  imageUrl: context
-                      .read<OnBoardingBloc>()
-                      .onBoardingData[
-                          context.read<OnBoardingBloc>().onBoardChangeIndex]
+                  imageUrl: bloc.onBoardingData[bloc.onBoardChangeIndex]
                       .onboardingImage,
-                  width: 30,
-                  height: 20,
+                  width: double.infinity,
+                  height: double.infinity,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => const Center(
-                    child: CircularProgressIndicator(),
+                  placeholder: (context, url) => Container(
+                    color: AppColors.surface(context),
+                    alignment: Alignment.center,
+                    child: const CircularProgressIndicator(),
                   ),
-                  errorWidget: (context, url, error) => const Center(
-                    child: Text(
-                      "",
-                      style: TextStyle(
-                        color: Colors.white,
-                      ),
+                  // Was an empty Text("") — a failed image load looked
+                  // identical to the fixed-size bug above (nothing visible),
+                  // making the two indistinguishable from the UI alone.
+                  errorWidget: (context, url, error) => Container(
+                    color: AppColors.surface(context),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.image_not_supported_outlined,
+                      color: Colors.white.withValues(alpha: 0.6),
+                      size: 40,
                     ),
                   ),
                 )
               : null;
         },
         onPageChanged: (value) {
-          context
-              .read<OnBoardingBloc>()
-              .contentPageController
-              .jumpToPage(value);
-          context
-              .read<OnBoardingBloc>()
-              .add(OnBoardingDataChangeEvent(currentIndex: value));
+          bloc.contentPageController.jumpToPage(value);
+          bloc.add(OnBoardingDataChangeEvent(currentIndex: value));
         },
       ),
     );
   }
 
-  Widget buildSkipButton(BuildContext context, Size size) {
-    if (context.read<OnBoardingBloc>().onBoardingData.isNotEmpty) {
-      return CustomButton(
-        buttonName: (context.read<OnBoardingBloc>().onBoardChangeIndex ==
-                context.read<OnBoardingBloc>().onBoardingData.length - 1)
-            ? '${AppLocalizations.of(context)!.continueN} '
-            : '${AppLocalizations.of(context)!.skip} ',
-        onTap: () => context.read<OnBoardingBloc>().add(SkipEvent()),
-        textSize: 12,
-        width: size.width,
-        borderRadius: 10,
-      );
-    } else {
-      return const SizedBox();
-    }
+  Widget buildSkipLink(BuildContext context) {
+    final bloc = context.read<OnBoardingBloc>();
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => bloc.add(SkipEvent()),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: MyText(
+            text: AppLocalizations.of(context)!.skip,
+            textStyle: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildPrimaryButton(BuildContext context, Size size) {
+    final bloc = context.read<OnBoardingBloc>();
+    if (bloc.onBoardingData.isEmpty) return const SizedBox();
+    final isLastPage =
+        bloc.onBoardChangeIndex == bloc.onBoardingData.length - 1;
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: AppColors.beaconGradient,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              if (isLastPage) {
+                bloc.add(SkipEvent());
+              } else {
+                bloc.contentPageController.nextPage(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeInOut,
+                );
+              }
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                MyText(
+                  text: isLastPage
+                      ? AppLocalizations.of(context)!.continueN
+                      : AppLocalizations.of(context)!.next,
+                  textStyle: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward_rounded,
+                    color: Colors.white, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

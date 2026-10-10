@@ -74,15 +74,15 @@ class _VerifyPageState extends State<VerifyPage>
             CustomLoader.dismiss(context);
             if (!widget.arg.userExist && widget.arg.isOtpVerify) {
               context.read<AuthBloc>().add(
-                SignInWithOTPEvent(
-                  isOtpVerify: widget.arg.isOtpVerify,
-                  isForgotPassword: false,
-                  mobileOrEmail: widget.arg.mobileOrEmail,
-                  dialCode: widget.arg.dialCode,
-                  isLoginByEmail: widget.arg.isLoginByEmail,
-                  context: context,
-                ),
-              );
+                    SignInWithOTPEvent(
+                      isOtpVerify: widget.arg.isOtpVerify,
+                      isForgotPassword: false,
+                      mobileOrEmail: widget.arg.mobileOrEmail,
+                      dialCode: widget.arg.dialCode,
+                      isLoginByEmail: widget.arg.isLoginByEmail,
+                      context: context,
+                    ),
+                  );
               timerCount(context, duration: 60);
             }
           } else if (state is ForgotPasswordOTPSendState) {
@@ -134,35 +134,35 @@ class _VerifyPageState extends State<VerifyPage>
                           children: [
                             SizedBox(
                                 height:
-                                MediaQuery.of(context).size.width * 0.1),
+                                    MediaQuery.of(context).size.width * 0.1),
                             context.read<AuthBloc>().isOtpVerify
                                 ? MyText(
-                              text: widget.arg.isLoginByEmail
-                                  ? AppLocalizations.of(context)!
-                                  .otpSendContent
-                                  : AppLocalizations.of(context)!
-                                  .testOtp
-                                  .replaceAll('***', '123456'),
-                              textAlign: TextAlign.center,
-                              textStyle: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium!
-                                  .copyWith(
-                                color: AppColors.greyHintColor,
-                              ),
-                            )
+                                    text: widget.arg.isLoginByEmail
+                                        ? AppLocalizations.of(context)!
+                                            .otpSendContent
+                                        : AppLocalizations.of(context)!
+                                            .testOtp
+                                            .replaceAll('***', '123456'),
+                                    textAlign: TextAlign.center,
+                                    textStyle: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          color: AppColors.greyHintColor,
+                                        ),
+                                  )
                                 : MyText(
-                              text: AppLocalizations.of(context)!
-                                  .passwordContent,
-                              textAlign: TextAlign.center,
-                              textStyle: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium!
-                                  .copyWith(
-                                color: AppColors.greyHintColor,
-                              ),
-                              maxLines: 2,
-                            ),
+                                    text: AppLocalizations.of(context)!
+                                        .passwordContent,
+                                    textAlign: TextAlign.center,
+                                    textStyle: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          color: AppColors.greyHintColor,
+                                        ),
+                                    maxLines: 2,
+                                  ),
                             const SizedBox(height: 20),
                             Wrap(
                               alignment: WrapAlignment.center,
@@ -178,11 +178,11 @@ class _VerifyPageState extends State<VerifyPage>
                                         imageUrl: widget.arg.countryFlag,
                                         fit: BoxFit.fill,
                                         placeholder: (context, url) =>
-                                        const Center(
+                                            const Center(
                                           child: Loader(),
                                         ),
                                         errorWidget: (context, url, error) =>
-                                        const Center(
+                                            const Center(
                                           child: Text(""),
                                         ),
                                       ),
@@ -195,8 +195,8 @@ class _VerifyPageState extends State<VerifyPage>
                                       .textTheme
                                       .bodyMedium!
                                       .copyWith(
-                                    color: AppColors.black,
-                                  ),
+                                        color: AppColors.black,
+                                      ),
                                 ),
                                 const SizedBox(width: 10),
                                 InkWell(
@@ -209,8 +209,8 @@ class _VerifyPageState extends State<VerifyPage>
                                         .textTheme
                                         .bodySmall!
                                         .copyWith(
-                                      color: AppColors.black,
-                                    ),
+                                          color: AppColors.black,
+                                        ),
                                   ),
                                 ),
                               ],
@@ -256,22 +256,22 @@ class _VerifyPageState extends State<VerifyPage>
               onTap: () {
                 context.read<AuthBloc>().isOtpVerify = true;
                 context.read<AuthBloc>().add(SignInWithOTPEvent(
-                  isOtpVerify: true,
-                  isForgotPassword: false,
-                  dialCode: widget.arg.dialCode,
-                  mobileOrEmail: widget.arg.mobileOrEmail,
-                  isLoginByEmail: widget.arg.isLoginByEmail,
-                  context: context,
-                ));
+                      isOtpVerify: true,
+                      isForgotPassword: false,
+                      dialCode: widget.arg.dialCode,
+                      mobileOrEmail: widget.arg.mobileOrEmail,
+                      isLoginByEmail: widget.arg.isLoginByEmail,
+                      context: context,
+                    ));
 
                 timerCount(context, duration: 60);
               },
               child: MyText(
                 text: AppLocalizations.of(context)!.signInUsingOtp,
                 textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: AppColors.black,
-                  fontWeight: FontWeight.w600,
-                ),
+                      color: AppColors.black,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ),
           ],
@@ -289,28 +289,28 @@ class _VerifyPageState extends State<VerifyPage>
             },
             child: !context.read<AuthBloc>().showPassword
                 ? const Icon(
-              Icons.visibility_off_outlined,
-              color: AppColors.darkGrey,
-            )
+                    Icons.visibility_off_outlined,
+                    color: AppColors.darkGrey,
+                  )
                 : const Icon(
-              Icons.visibility,
-              color: AppColors.darkGrey,
-            ),
+                    Icons.visibility,
+                    color: AppColors.darkGrey,
+                  ),
           ),
         ),
         const SizedBox(height: 10),
         InkWell(
           onTap: () {
             context.read<AuthBloc>().add(
-              SignInWithOTPEvent(
-                isOtpVerify: true,
-                isForgotPassword: true,
-                mobileOrEmail: widget.arg.mobileOrEmail,
-                dialCode: widget.arg.dialCode,
-                isLoginByEmail: widget.arg.isLoginByEmail,
-                context: context,
-              ),
-            );
+                  SignInWithOTPEvent(
+                    isOtpVerify: true,
+                    isForgotPassword: true,
+                    mobileOrEmail: widget.arg.mobileOrEmail,
+                    dialCode: widget.arg.dialCode,
+                    isLoginByEmail: widget.arg.isLoginByEmail,
+                    context: context,
+                  ),
+                );
           },
           child: MyText(
             text: '${AppLocalizations.of(context)!.forgetPassword} ?',
@@ -348,77 +348,80 @@ class _VerifyPageState extends State<VerifyPage>
                 child: MyText(
                   text: AppLocalizations.of(context)!.signInUsingPass,
                   textStyle: Theme.of(context).textTheme.bodySmall!.copyWith(
-                    color: AppColors.darkGrey,
-                    fontWeight: FontWeight.w600,
-                  ),
+                        color: AppColors.darkGrey,
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
               ),
           ],
         ),
         const SizedBox(height: 10),
-        MaterialPinField(
-          pinController: context.read<AuthBloc>().otpController,
-          length: 6,
-          obscureText: false,
-          autoFocus: true,
-          blinkWhenObscuring: false,
-          enableAutofill: false,
-          keyboardType: TextInputType.number,
-          theme: MaterialPinTheme(
-            textStyle: Theme.of(context).textTheme.bodyLarge,
-            entryAnimation: MaterialPinAnimation.fade,
-            animationDuration: const Duration(milliseconds: 300),
-            shape: MaterialPinShape.outlined,
-            borderRadius: BorderRadius.circular(12),
-            cellSize: const Size(45, 45),
-            filledFillColor: Theme.of(context).scaffoldBackgroundColor,
-            fillColor: Theme.of(context).scaffoldBackgroundColor,
-            borderColor: Theme.of(context).scaffoldBackgroundColor,
-            focusedFillColor: Theme.of(context).scaffoldBackgroundColor,
-            focusedBorderColor: Theme.of(context).disabledColor,
-            filledBorderColor: Theme.of(context).scaffoldBackgroundColor,
-            borderWidth: 1,
-            focusedBorderWidth: 1,
-            cursorColor: Theme.of(context).dividerColor,
-            boxShadows: const [
-              BoxShadow(
-                offset: Offset(0, 1),
-                color: Colors.black12,
-                blurRadius: 10,
-              )
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: MaterialPinField(
+            pinController: context.read<AuthBloc>().otpController,
+            length: 6,
+            obscureText: false,
+            autoFocus: true,
+            blinkWhenObscuring: false,
+            enableAutofill: false,
+            keyboardType: TextInputType.number,
+            theme: MaterialPinTheme(
+              textStyle: Theme.of(context).textTheme.bodyLarge,
+              entryAnimation: MaterialPinAnimation.fade,
+              animationDuration: const Duration(milliseconds: 300),
+              shape: MaterialPinShape.outlined,
+              borderRadius: BorderRadius.circular(12),
+              cellSize: const Size(45, 45),
+              filledFillColor: Theme.of(context).scaffoldBackgroundColor,
+              fillColor: Theme.of(context).scaffoldBackgroundColor,
+              borderColor: Theme.of(context).scaffoldBackgroundColor,
+              focusedFillColor: Theme.of(context).scaffoldBackgroundColor,
+              focusedBorderColor: Theme.of(context).disabledColor,
+              filledBorderColor: Theme.of(context).scaffoldBackgroundColor,
+              borderWidth: 1,
+              focusedBorderWidth: 1,
+              cursorColor: Theme.of(context).dividerColor,
+              boxShadows: const [
+                BoxShadow(
+                  offset: Offset(0, 1),
+                  color: Colors.black12,
+                  blurRadius: 10,
+                )
+              ],
+            ),
+            onChanged: (_) => context.read<AuthBloc>().add(OTPOnChangeEvent()),
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
             ],
           ),
-          onChanged: (_) => context.read<AuthBloc>().add(OTPOnChangeEvent()),
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-          ],
         ),
         const SizedBox(height: 10),
         InkWell(
           onTap: context.read<AuthBloc>().timerDuration != 0
               ? null
               : () {
-            context.read<AuthBloc>().add(
-              SignInWithOTPEvent(
-                isOtpVerify: true,
-                isForgotPassword: false,
-                dialCode: widget.arg.dialCode,
-                mobileOrEmail: widget.arg.mobileOrEmail,
-                isLoginByEmail: widget.arg.isLoginByEmail,
-                context: context,
-              ),
-            );
-            timerCount(context, duration: 60);
-          },
+                  context.read<AuthBloc>().add(
+                        SignInWithOTPEvent(
+                          isOtpVerify: true,
+                          isForgotPassword: false,
+                          dialCode: widget.arg.dialCode,
+                          mobileOrEmail: widget.arg.mobileOrEmail,
+                          isLoginByEmail: widget.arg.isLoginByEmail,
+                          context: context,
+                        ),
+                      );
+                  timerCount(context, duration: 60);
+                },
           child: MyText(
             text: context.read<AuthBloc>().timerDuration != 0
                 ? '${AppLocalizations.of(context)!.resendOtp} 00:${context.read<AuthBloc>().timerDuration}'
                 : AppLocalizations.of(context)!.resendOtp,
             textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-              color: context.read<AuthBloc>().timerDuration != 0
-                  ? AppColors.greyHintColor
-                  : AppColors.black,
-            ),
+                  color: context.read<AuthBloc>().timerDuration != 0
+                      ? AppColors.greyHintColor
+                      : AppColors.black,
+                ),
           ),
         ),
       ],
@@ -442,31 +445,31 @@ class _VerifyPageState extends State<VerifyPage>
                   context.read<AuthBloc>().isOtpVerify) {
                 // OTPverify
                 context.read<AuthBloc>().add(
-                  ConfirmOrVerifyOTPEvent(
-                    isUserExist: widget.arg.userExist,
-                    isLoginByEmail: widget.arg.isLoginByEmail,
-                    isOtpVerify: context.read<AuthBloc>().isOtpVerify,
-                    isForgotPasswordVerify: false,
-                    mobileOrEmail: widget.arg.mobileOrEmail,
-                    otp: context.read<AuthBloc>().otpController.text,
-                    password:
-                    context.read<AuthBloc>().passwordController.text,
-                    firebaseVerificationId:
-                    context.read<AuthBloc>().firebaseVerificationId,
-                    context: context,
-                  ),
-                );
+                      ConfirmOrVerifyOTPEvent(
+                        isUserExist: widget.arg.userExist,
+                        isLoginByEmail: widget.arg.isLoginByEmail,
+                        isOtpVerify: context.read<AuthBloc>().isOtpVerify,
+                        isForgotPasswordVerify: false,
+                        mobileOrEmail: widget.arg.mobileOrEmail,
+                        otp: context.read<AuthBloc>().otpController.text,
+                        password:
+                            context.read<AuthBloc>().passwordController.text,
+                        firebaseVerificationId:
+                            context.read<AuthBloc>().firebaseVerificationId,
+                        context: context,
+                      ),
+                    );
               } else {
                 // PasswordLogin
                 context.read<AuthBloc>().add(LoginUserEvent(
-                  emailOrMobile: widget.arg.mobileOrEmail,
-                  otp: context.read<AuthBloc>().otpController.text,
-                  password:
-                  context.read<AuthBloc>().passwordController.text,
-                  isOtpLogin: context.read<AuthBloc>().isOtpVerify,
-                  isLoginByEmail: widget.arg.isLoginByEmail,
-                  context: context,
-                ));
+                      emailOrMobile: widget.arg.mobileOrEmail,
+                      otp: context.read<AuthBloc>().otpController.text,
+                      password:
+                          context.read<AuthBloc>().passwordController.text,
+                      isOtpLogin: context.read<AuthBloc>().isOtpVerify,
+                      isLoginByEmail: widget.arg.isLoginByEmail,
+                      context: context,
+                    ));
               }
             },
           ),

@@ -31,6 +31,12 @@ target 'Runner' do
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 
+  # firebase_auth only pulls in RecaptchaInterop (the protocol stub) — the
+  # actual reCAPTCHA Enterprise SDK implementation has to be added
+  # separately, or Phone Auth verification fails at runtime with
+  # "recaptcha-sdk-not-linked". See
+  # https://cloud.google.com/recaptcha-enterprise/docs/instrument-ios-apps
+  pod 'RecaptchaEnterprise'
 
   target 'RunnerTests' do
     inherit! :search_paths

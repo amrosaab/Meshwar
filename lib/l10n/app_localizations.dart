@@ -3671,6 +3671,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Documents'**
   String get documents;
+
+  /// No description provided for @rideCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get rideCall;
+
+  /// No description provided for @noDriversNearbyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No drivers nearby'**
+  String get noDriversNearbyTitle;
+
+  /// No description provided for @noDriversNearbyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn’t find a driver for this ride right now.'**
+  String get noDriversNearbyBody;
+
+  /// No description provided for @noDriversNearbyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again in a few moments, or adjust your pickup location.'**
+  String get noDriversNearbyHint;
+
+  /// No description provided for @backToRide.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to ride'**
+  String get backToRide;
+
+  /// No description provided for @cancelRideConfirmationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this ride?'**
+  String get cancelRideConfirmationTitle;
+
+  /// No description provided for @cancelRideSearchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You can keep searching, or cancel this request.'**
+  String get cancelRideSearchBody;
+
+  /// No description provided for @keepSearching.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep searching'**
+  String get keepSearching;
+
+  /// No description provided for @profilePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile photo'**
+  String get profilePhoto;
+
+  /// No description provided for @changeProfilePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get changeProfilePhoto;
 }
 
 class _AppLocalizationsDelegate

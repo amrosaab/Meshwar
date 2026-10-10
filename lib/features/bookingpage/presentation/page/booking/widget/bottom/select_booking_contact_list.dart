@@ -10,7 +10,6 @@ import '../../../../../../../l10n/app_localizations.dart';
 import '../../../../../../home/domain/models/contact_model.dart';
 import '../../../../../application/booking_bloc.dart';
 
-
 // Select Contacts
 class SelectBookingContactList extends StatelessWidget {
   const SelectBookingContactList({super.key});

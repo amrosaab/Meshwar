@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "625488459506-948u9ibcmt1jsnh9059bl4n1qtodai8f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.meshwar.captain",
+            "certificate_hash": "2238c83ad00554b991418e11eb510ec7ab089e98"
+          }
+        },
+        {
           "client_id": "625488459506-ptnchrj8p8vlld5h52ocrgo6b0h7jb7o.apps.googleusercontent.com",
           "client_type": 3
         }

@@ -601,7 +601,15 @@
     "view_document": "Voir le document",
     "uploaded_approved": "Téléversé et approuvé",
     "document": "Document",
-    "documents": "Documents"
-
-
+    "documents": "Documents",
+  "rideCall": "Appeler",
+  "noDriversNearbyTitle": "Aucun chauffeur à proximité",
+  "noDriversNearbyBody": "Nous n’avons pas trouvé de chauffeur pour ce trajet pour le moment.",
+  "noDriversNearbyHint": "Réessayez dans quelques instants ou modifiez votre lieu de prise en charge.",
+  "backToRide": "Retour au trajet",
+  "cancelRideConfirmationTitle": "Annuler cette course ?",
+  "cancelRideSearchBody": "Vous pouvez continuer la recherche ou annuler cette demande.",
+  "keepSearching": "Continuer la recherche",
+    "profilePhoto": "Photo de profil",
+    "changeProfilePhoto": "Changer la photo"
 }

@@ -54,119 +54,162 @@ class RidePreviewWidget extends StatelessWidget {
                   child: Container(
                     decoration: BoxDecoration(
                       color: Theme.of(context).scaffoldBackgroundColor,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha((0.08 * 255).toInt()),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
                         ),
                       ],
-                      border: Border.all(
-                        color: AppColors.borderColor
-                            .withAlpha((0.5 * 255).toInt()),
-                        width: 1,
-                      ),
                     ),
-                    padding: EdgeInsets.only(
-                        top: size.width * 0.03, bottom: size.width * 0.025),
-                    child: Column(
+                    padding: EdgeInsets.symmetric(
+                        vertical: size.width * 0.04,
+                        horizontal: size.width * 0.01),
+                    child: Stack(
                       children: [
-                        // Pickup location with enhanced UI
-                        ListView.builder(
-                          itemCount: arg.pickupAddressList.length,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          itemBuilder: (context, index) {
-                            final address =
-                                arg.pickupAddressList.elementAt(index);
-                            return _buildLocationTile(
-                              stop: index,
-                              isDrop: false,
-                              bookingBloc: bookingBloc,
-                              context: context,
-                              icon: Container(
-                                width: 25,
-                                height: 25,
-                                decoration: BoxDecoration(
-                                  color: AppColors.green
-                                      .withAlpha((0.15 * 255).toInt()),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.trip_origin,
-                                  color: AppColors.green,
-                                  size: 18,
-                                ),
+                        Positioned(
+                          left: size.width * 0.048 + 12,
+                          top: size.width * 0.11,
+                          bottom: size.width * 0.11,
+                          child: Container(
+                            width: 2,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  AppColors.green.withValues(alpha: 0.35),
+                                  AppColors.meshwarRed.withValues(alpha: 0.35),
+                                ],
                               ),
-                              address: address.address,
-                              label: AppLocalizations.of(context)!.pickup,
-                              labelColor: AppColors.green,
-                              size: size,
-                            );
-                          },
+                            ),
+                          ),
                         ),
-                        SizedBox(height: size.width * 0.03),
-                        if (bookingBloc.dropAddressList.isNotEmpty) ...[
-                          // Stop locations with connecting line
-                          ListView.separated(
-                            itemCount: bookingBloc.dropAddressList.length,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            itemBuilder: (context, index) {
-                              final address =
-                                  bookingBloc.dropAddressList.elementAt(index);
-                              final isDrop = true;
-                              return _buildLocationTile(
-                                stop: index,
-                                isDrop: isDrop,
-                                bookingBloc: bookingBloc,
-                                context: context,
-                                icon: Container(
-                                  width: 25,
-                                  height: 25,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.red
-                                        .withAlpha((0.15 * 255).toInt()),
-                                    shape: BoxShape.circle,
+                        Column(
+                          children: [
+                            // Pickup location with enhanced UI
+                            ListView.builder(
+                              itemCount: arg.pickupAddressList.length,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              itemBuilder: (context, index) {
+                                final address =
+                                    arg.pickupAddressList.elementAt(index);
+                                return _buildLocationTile(
+                                  stop: index,
+                                  isDrop: false,
+                                  bookingBloc: bookingBloc,
+                                  context: context,
+                                  icon: Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: const LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Color(0xFF34C77E),
+                                          AppColors.green,
+                                        ],
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.green
+                                              .withValues(alpha: 0.35),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.circle,
+                                      color: Colors.white,
+                                      size: 10,
+                                    ),
                                   ),
-                                  child: Icon(
-                                    (index ==
+                                  address: address.address,
+                                  label: AppLocalizations.of(context)!.pickup,
+                                  labelColor: AppColors.green,
+                                  size: size,
+                                );
+                              },
+                            ),
+                            SizedBox(height: size.width * 0.03),
+                            if (bookingBloc.dropAddressList.isNotEmpty) ...[
+                              // Stop locations with connecting line
+                              ListView.separated(
+                                itemCount: bookingBloc.dropAddressList.length,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
+                                itemBuilder: (context, index) {
+                                  final address = bookingBloc.dropAddressList
+                                      .elementAt(index);
+                                  final isDrop = true;
+                                  return _buildLocationTile(
+                                    stop: index,
+                                    isDrop: isDrop,
+                                    bookingBloc: bookingBloc,
+                                    context: context,
+                                    icon: Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: const LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            Color(0xFFF0546F),
+                                            AppColors.meshwarRed,
+                                          ],
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.meshwarRed
+                                                .withValues(alpha: 0.35),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(
+                                        (index ==
+                                                bookingBloc.dropAddressList
+                                                        .length -
+                                                    1)
+                                            ? Icons.flag_rounded
+                                            : Icons.add_location_alt,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
+                                    ),
+                                    address: address.address,
+                                    label: (index ==
                                             bookingBloc.dropAddressList.length -
                                                 1)
-                                        ? Icons.location_on
-                                        : Icons.add_location_alt,
-                                    color: AppColors.red,
-                                    size: 18,
-                                  ),
-                                ),
-                                address: address.address,
-                                label: (index ==
-                                        bookingBloc.dropAddressList.length - 1)
-                                    ? AppLocalizations.of(context)!.dropLocation
-                                    : AppLocalizations.of(context)!
-                                        .stop
-                                        .replaceAll('111', '${index + 1}'),
-                                labelColor: AppColors.red,
-                                size: size,
-                              );
-                            },
-                            separatorBuilder: (context, index) {
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Container(
-                                    margin: EdgeInsets.only(
-                                        left: size.width * 0.043),
-                                    height: 1,
-                                    width: 2,
-                                    color: Theme.of(context).dividerColor),
-                              );
-                            },
-                          ),
-                          SizedBox(height: size.width * 0.02),
-                        ],
+                                        ? AppLocalizations.of(context)!
+                                            .dropLocation
+                                        : AppLocalizations.of(context)!
+                                            .stop
+                                            .replaceAll('111', '${index + 1}'),
+                                    labelColor: AppColors.red,
+                                    size: size,
+                                  );
+                                },
+                                separatorBuilder: (context, index) {
+                                  return SizedBox(height: size.width * 0.02);
+                                },
+                              ),
+                              SizedBox(height: size.width * 0.02),
+                            ],
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -204,32 +247,32 @@ class RidePreviewWidget extends StatelessWidget {
       required bool isDrop,
       required int stop}) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: size.width * 0.008),
+      padding: EdgeInsets.symmetric(vertical: size.width * 0.014),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           icon,
-          SizedBox(width: size.width * 0.025),
+          SizedBox(width: size.width * 0.03),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  label,
+                  label.toUpperCase(),
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: labelColor,
-                    letterSpacing: 0.5,
+                    letterSpacing: 0.4,
                   ),
                 ),
-                SizedBox(height: size.width * 0.003),
+                SizedBox(height: size.width * 0.005),
                 MyText(
                   text: address,
                   maxLines: 1,
                   textStyle: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                         color: Theme.of(context)
                             .textTheme
                             .bodySmall
@@ -304,7 +347,11 @@ class RidePreviewWidget extends StatelessWidget {
                   ));
                 });
               },
-              child: const Icon(Icons.edit_outlined, size: 20),
+              child: const Padding(
+                padding: EdgeInsets.only(top: 2),
+                child: Icon(Icons.edit_outlined,
+                    size: 18, color: AppColors.hintColor),
+              ),
             ),
           ]
         ],

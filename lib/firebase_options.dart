@@ -60,7 +60,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAEKTPr1fiwgKzdqyAIOmMxUebAwW14F8Q',
-    appId: '1:625488459506:ios:b7ea1397d6fbb7f8abc26b',
+    appId: '1:625488459506:ios:313437c73f266fe0abc26b',
     messagingSenderId: '625488459506',
     projectId: 'meshwar-f665c',
     databaseURL: 'https://meshwar-f665c-default-rtdb.europe-west1.firebasedatabase.app',

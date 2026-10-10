@@ -16,28 +16,44 @@ class CustomButton extends StatefulWidget {
   final bool? isBorder;
   final Border? border;
   final Widget? leading;
+
+  /// Optional widget pinned to the trailing edge (e.g. a price chip) —
+  /// when set, the button switches from centered content to a
+  /// space-between layout with buttonName/leading on the left and this
+  /// on the right. Leaving it null keeps every existing call site's
+  /// centered layout unchanged.
+  final Widget? trailing;
   final bool? isLoaderShowWithText;
+
   /// Cuts the top-left/bottom-right corners at 45° instead of rounding —
   /// the "punk" hero-CTA treatment. Off by default so existing buttons
   /// keep their current shape; opt in per-button for primary actions.
   final bool angular;
 
+  /// Overrides the default [AppColors.beaconGradient] fill — for small
+  /// buttons where the default's diagonal direction barely shows across
+  /// so little width, a horizontal gradient reads as a clearer red-to-light
+  /// capsule. Ignored when [buttonColor] or outline mode is set.
+  final Gradient? gradient;
+
   const CustomButton(
       {super.key,
-        required this.buttonName,
-        this.height,
-        this.width,
-        this.isLoaderShowWithText = false,
-        this.borderRadius,
-        this.buttonColor,
-        this.textColor,
-        this.textSize,
-        this.border,
-        this.onTap,
-        this.isLoader = false,
-        this.isBorder,
-        this.leading,
-        this.angular = false});
+      required this.buttonName,
+      this.height,
+      this.width,
+      this.isLoaderShowWithText = false,
+      this.borderRadius,
+      this.buttonColor,
+      this.textColor,
+      this.textSize,
+      this.border,
+      this.onTap,
+      this.isLoader = false,
+      this.isBorder,
+      this.leading,
+      this.trailing,
+      this.angular = false,
+      this.gradient});
 
   @override
   State<CustomButton> createState() => _CustomButtonState();
@@ -63,77 +79,109 @@ class _CustomButtonState extends State<CustomButton> {
     final double cut = widget.angular ? (h * 0.32).clamp(8, 16) : 0;
 
     final decoration = BoxDecoration(
-      borderRadius: widget.angular ? null : BorderRadius.circular(widget.borderRadius ?? 14),
-      gradient: (!outline && widget.buttonColor == null) ? AppColors.beaconGradient : null,
-      color: outline ? (widget.buttonColor ?? Colors.transparent) : widget.buttonColor,
+      borderRadius: widget.angular
+          ? null
+          : BorderRadius.circular(widget.borderRadius ?? 14),
+      gradient: (!outline && widget.buttonColor == null)
+          ? (widget.gradient ?? AppColors.beaconGradient)
+          : null,
+      color: outline
+          ? (widget.buttonColor ?? Colors.transparent)
+          : widget.buttonColor,
       border: widget.angular
           ? null
           : (widget.border ??
-          (outline ? Border.all(color: AppColors.meshwarRed.withOpacity(0.5)) : null)),
+              (outline
+                  ? Border.all(color: AppColors.meshwarRed.withOpacity(0.5))
+                  : null)),
     );
 
-    final content = Center(
-      child: (!_isLoader)
-          ? Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (widget.leading != null) ...[
-            widget.leading!,
-            const SizedBox(width: 6),
-          ],
-          Text(
-            widget.buttonName.toUpperCase(),
-            textAlign: TextAlign.center,
-            style: AppTextStyle.normalStyle().copyWith(
-              color: widget.textColor ??
-                  (outline ? AppColors.meshwarRed : AppColors.buttonTextColor),
-              fontSize: widget.textSize ?? 16,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.6,
-            ),
-            maxLines: 2,
-          ),
-        ],
-      )
-          : (!(widget.isLoaderShowWithText ?? false))
-          ? SizedBox(
-        height: size.width * 0.05,
-        width: size.width * 0.05,
-        child: Loader(
-          color: widget.textColor ?? AppColors.buttonTextColor,
-        ),
-      )
-          : Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          MyText(
-            text: widget.buttonName.toUpperCase(),
-            textStyle: AppTextStyle.normalStyle()
-                .copyWith(color: widget.textColor ?? AppColors.buttonTextColor, letterSpacing: 0.6),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            height: size.width * 0.04,
-            width: size.width * 0.04,
-            child: Loader(
-              color: widget.textColor ?? AppColors.buttonTextColor,
-            ),
-          )
-        ],
+    final buttonText = Text(
+      widget.buttonName.toUpperCase(),
+      textAlign: TextAlign.center,
+      style: AppTextStyle.normalStyle().copyWith(
+        color: widget.textColor ??
+            (outline ? AppColors.meshwarRed : AppColors.buttonTextColor),
+        fontSize: widget.textSize ?? 16,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.6,
+      ),
+      maxLines: 2,
+    );
+
+    final content = Padding(
+      padding: widget.trailing != null
+          ? const EdgeInsets.symmetric(horizontal: 20)
+          : EdgeInsets.zero,
+      child: Center(
+        child: (!_isLoader)
+            ? (widget.leading == null && widget.trailing == null)
+                ? buttonText
+                : Row(
+                mainAxisAlignment: widget.trailing != null
+                    ? MainAxisAlignment.spaceBetween
+                    : MainAxisAlignment.center,
+                mainAxisSize: widget.trailing != null
+                    ? MainAxisSize.max
+                    : MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.leading != null) ...[
+                        widget.leading!,
+                        const SizedBox(width: 6),
+                      ],
+                      buttonText,
+                    ],
+                  ),
+                  if (widget.trailing != null) widget.trailing!,
+                ],
+              )
+            : (!(widget.isLoaderShowWithText ?? false))
+                ? SizedBox(
+                    height: size.width * 0.05,
+                    width: size.width * 0.05,
+                    child: Loader(
+                      color: widget.textColor ?? AppColors.buttonTextColor,
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      MyText(
+                        text: widget.buttonName.toUpperCase(),
+                        textStyle: AppTextStyle.normalStyle().copyWith(
+                            color:
+                                widget.textColor ?? AppColors.buttonTextColor,
+                            letterSpacing: 0.6),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        height: size.width * 0.04,
+                        width: size.width * 0.04,
+                        child: Loader(
+                          color: widget.textColor ?? AppColors.buttonTextColor,
+                        ),
+                      )
+                    ],
+                  ),
       ),
     );
 
-    Widget box = Container(height: h, width: w, decoration: decoration, child: content);
+    Widget box =
+        Container(height: h, width: w, decoration: decoration, child: content);
 
     if (widget.angular) {
       box = CustomPaint(
         foregroundPainter: (!_canTap || outline)
             ? null
-            : _AngularGlowBorder(cut: cut, color: AppColors.meshwarRed.withOpacity(0.7)),
+            : _AngularGlowBorder(
+                cut: cut, color: AppColors.meshwarRed.withOpacity(0.7)),
         child: ClipPath(
           clipper: _AngularButtonClipper(cut: cut),
-          child: Container(height: h, width: w, decoration: decoration, child: content),
+          child: Container(
+              height: h, width: w, decoration: decoration, child: content),
         ),
       );
     }
@@ -151,16 +199,17 @@ class _CustomButtonState extends State<CustomButton> {
           decoration: (!_canTap || outline || widget.angular)
               ? null
               : BoxDecoration(
-            borderRadius: BorderRadius.circular(widget.borderRadius ?? 14),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.meshwarRed.withOpacity(0.38),
-                blurRadius: 22,
-                spreadRadius: -4,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
+                  borderRadius:
+                      BorderRadius.circular(widget.borderRadius ?? 14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.meshwarRed.withOpacity(0.38),
+                      blurRadius: 22,
+                      spreadRadius: -4,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
           child: box,
         ),
       ),
@@ -186,7 +235,8 @@ class _AngularButtonClipper extends CustomClipper<Path> {
   }
 
   @override
-  bool shouldReclip(covariant _AngularButtonClipper oldClipper) => oldClipper.cut != cut;
+  bool shouldReclip(covariant _AngularButtonClipper oldClipper) =>
+      oldClipper.cut != cut;
 }
 
 class _AngularGlowBorder extends CustomPainter {

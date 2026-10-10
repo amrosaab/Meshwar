@@ -68,8 +68,18 @@ class OnBoardingData {
         id: json["id"],
         screen: json["screen"],
         title: json["title"],
-        onboardingImage: json["onboarding_image"],
+        onboardingImage: _fixMalformedImageUrl(json["onboarding_image"]),
         description: json["description"],
         active: json["active"],
       );
+
+  // The /api/v1/on-boarding endpoint currently returns
+  // "https://meshwar.wsstorage/uploads/..." — the backend concatenates its
+  // base URL and the storage path without a separating slash, producing an
+  // invalid hostname ("meshwar.wsstorage") that fails DNS resolution before
+  // the request ever reaches the server. Confirmed on all 4 onboarding
+  // entries, so it's a systematic backend bug, not a one-off bad record.
+  // This client-side repair is a stopgap — the real fix belongs server-side.
+  static String _fixMalformedImageUrl(String url) =>
+      url.replaceFirst('meshwar.wsstorage/', 'meshwar.ws/storage/');
 }

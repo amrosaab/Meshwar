@@ -8,7 +8,6 @@ import '../../../../../../../core/utils/custom_text.dart';
 import '../../../../../../../l10n/app_localizations.dart';
 import '../../../../../application/booking_bloc.dart';
 
-
 class SelectBookingTypeWidget extends StatelessWidget {
   const SelectBookingTypeWidget({super.key});
 

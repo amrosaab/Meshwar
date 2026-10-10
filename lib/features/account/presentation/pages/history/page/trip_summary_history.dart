@@ -4,13 +4,10 @@ import "package:flutter/material.dart";
 import "package:flutter_bloc/flutter_bloc.dart";
 
 import "../../../../../../common/common.dart";
-import "../../../../../../core/utils/custom_appbar.dart";
-import "../../../../../../core/utils/custom_background.dart";
-import "../../../../../../core/utils/custom_button.dart";
-import "../../../../../../core/utils/custom_container.dart";
+import "../../../../../../common/ride_visuals.dart";
+import "../widget/history_detail_widgets.dart";
 import "../../../../../../core/utils/custom_loader.dart";
 import "../../../../../../core/utils/custom_snack_bar.dart";
-import "../../../../../../core/utils/custom_text.dart";
 import "../../../../../../l10n/app_localizations.dart";
 import "../../../../application/acc_bloc.dart";
 import "../../support_ticket/widgets/create_ticket_sheet.dart";
@@ -28,8 +25,6 @@ class HistoryTripSummaryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-
     return BlocProvider(
       create: (context) => AccBloc()
         ..add(AccGetDirectionEvent())
@@ -116,544 +111,242 @@ class HistoryTripSummaryPage extends StatelessWidget {
             }
           }
 
+          final l10n = AppLocalizations.of(context)!;
+          final dark = Theme.of(context).brightness == Brightness.dark;
+          final surface = dark ? AppColors.bgAsphaltLight : Colors.white;
           return Directionality(
             textDirection: context.read<AccBloc>().textDirection == 'rtl'
                 ? TextDirection.rtl
                 : TextDirection.ltr,
             child: Scaffold(
-              appBar: CustomAppBar(
-                title: AppLocalizations.of(context)!.rideDetails,
-                automaticallyImplyLeading: true,
-                titleFontSize: 18,
+              backgroundColor: RideVisuals.canvas(context),
+              appBar: AppBar(
+                backgroundColor: surface,
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
+                toolbarHeight: 64,
+                centerTitle: true,
+                leading: IconButton(
+                  tooltip: l10n.back,
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(Icons.arrow_back_rounded,
+                      color: HistoryDetailStyle.ink(context), size: 22),
+                ),
+                title: Text(l10n.rideDetails,
+                    style: HistoryDetailStyle.text(context)
+                        .copyWith(fontSize: 18, fontWeight: FontWeight.w700)),
               ),
-              body: CustomBackground(
-                child: (tripHistoryData != null)
-                    ? SafeArea(
-                  child: Stack(
-                    children: [
-                      SizedBox(
-                        height: size.height,
-                        width: size.width,
-                        child: CustomScrollView(
-                          slivers: [
-                            SliverList(
-                                delegate: SliverChildBuilderDelegate(
-                                    childCount: 1, (context, index) {
-                                  return Container(
-                                    padding:
-                                    EdgeInsets.all(size.width * 0.03),
-                                    width: size.width,
-                                    child: Column(
-                                      children: [
-                                        // Fare Breakdown
-                                        if (tripHistoryData.isCompleted ==
-                                            1 ||
-                                            tripHistoryData.isCancelled == 1)
-                                          TripFarebreakupWidget(
-                                              cont: context, arg: arg),
-
-                                        SizedBox(height: size.width * 0.02),
-
-                                        // Tips Section for Bid Rides
-                                        if (tripHistoryData.isBidRide == 1 &&
-                                            tripHistoryData.requestBill !=
-                                                null &&
-                                            tripHistoryData.requestBill.data
-                                                .driverTips !=
-                                                "0")
-                                          CustomContainer(
-                                            borderRadius: 14,
-                                            child: Padding(
-                                              padding: EdgeInsets.all(
-                                                  size.width * 0.05),
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                MainAxisAlignment
-                                                    .spaceBetween,
-                                                children: [
-                                                  MyText(
-                                                    text: AppLocalizations
-                                                        .of(context)!
-                                                        .tips,
-                                                    textStyle: Theme.of(
-                                                        context)
-                                                        .textTheme
-                                                        .bodyLarge!
-                                                        .copyWith(
-                                                        fontSize: 18),
-                                                  ),
-                                                  MyText(
-                                                    text:
-                                                    '${tripHistoryData.requestBill.data.requestedCurrencySymbol} ${tripHistoryData.requestBill.data.driverTips}',
-                                                    textStyle: Theme.of(
-                                                        context)
-                                                        .textTheme
-                                                        .bodyMedium!
-                                                        .copyWith(
-                                                        fontWeight:
-                                                        FontWeight
-                                                            .bold,
-                                                        fontSize: 18),
-                                                  )
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-
-                                        if (tripHistoryData.isBidRide == 1 &&
-                                            tripHistoryData.requestBill !=
-                                                null &&
-                                            tripHistoryData.requestBill.data
-                                                .driverTips !=
-                                                "0")
-                                          SizedBox(height: size.width * 0.02),
-
-                                        // Driver Details
-                                        TripDriverDetailsWidget(
-                                            cont: context, arg: arg),
-
-                                        SizedBox(height: size.width * 0.02),
-
-                                        // Vehicle Info
-                                        TripVehicleInfoWidget(
-                                            cont: context, arg: arg),
-
-                                        SizedBox(height: size.width * 0.02),
-
-                                        // Delivery Proof Section
-                                        if (tripHistoryData.transportType ==
-                                            'delivery' &&
-                                            tripHistoryData.requestProofs
-                                                .data.isNotEmpty)
-                                          CustomContainer(
-                                            borderRadius: 14,
-                                            child: InkWell(
-                                              borderRadius:
-                                              BorderRadius.circular(14),
-                                              onTap: () {
-                                                if (arg
-                                                    .historyData
-                                                    .requestProofs
-                                                    .data
-                                                    .isNotEmpty) {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          DeliveryProofViewPage(
-                                                              images: arg
-                                                                  .historyData
-                                                                  .requestProofs
-                                                                  .data),
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                              child: Padding(
-                                                padding: EdgeInsets.all(
-                                                    size.width * 0.05),
-                                                child: Row(
-                                                  children: [
-                                                    const Icon(Icons.image,
-                                                        color:
-                                                        AppColors.blue),
-                                                    const SizedBox(width: 8),
-                                                    MyText(
-                                                      text: AppLocalizations
-                                                          .of(context)!
-                                                          .loadShipmentProof,
-                                                      textStyle: const TextStyle(
-                                                          color: AppColors
-                                                              .blue,
-                                                          decoration:
-                                                          TextDecoration
-                                                              .underline,
-                                                          decorationColor:
-                                                          AppColors.blue,
-                                                          fontSize: 16),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-
-                                        if (tripHistoryData.transportType ==
-                                            'delivery' &&
-                                            tripHistoryData.requestProofs
-                                                .data.isNotEmpty)
-                                          SizedBox(height: size.width * 0.02),
-
-                                        // Trip ID Section
-                                        CustomContainer(
-                                          borderRadius: 14,
-                                          child: Padding(
-                                            padding: EdgeInsets.all(
-                                                size.width * 0.05),
-                                            child: Row(
-                                              children: [
-                                                Column(
-                                                  crossAxisAlignment:
-                                                  CrossAxisAlignment
-                                                      .start,
-                                                  children: [
-                                                    MyText(
-                                                      text: AppLocalizations
-                                                          .of(context)!
-                                                          .tripId,
-                                                      textStyle: Theme.of(
-                                                          context)
-                                                          .textTheme
-                                                          .bodyMedium!
-                                                          .copyWith(
-                                                          fontSize: 18),
-                                                    ),
-                                                    SizedBox(
-                                                        height: size.width *
-                                                            0.02),
-                                                    MyText(
-                                                      text: tripHistoryData
-                                                          .requestNumber,
-                                                      textStyle: Theme.of(
-                                                          context)
-                                                          .textTheme
-                                                          .bodyMedium!
-                                                          .copyWith(
-                                                          fontSize: 18),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-
-                                        SizedBox(height: size.width * 0.02),
-
-                                        // Ratings Section
-                                        if (tripHistoryData.isCompleted ==
-                                            1) ...[
-                                          CustomContainer(
-                                            borderRadius: 14,
-                                            child: Padding(
-                                              padding: EdgeInsets.all(
-                                                  size.width * 0.05),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                                children: [
-                                                  MyText(
-                                                    text: AppLocalizations
-                                                        .of(context)!
-                                                        .ratings,
-                                                    textStyle: Theme.of(
-                                                        context)
-                                                        .textTheme
-                                                        .bodyMedium!
-                                                        .copyWith(
-                                                        fontSize: 18),
-                                                  ),
-                                                  SizedBox(
-                                                      height: size.width *
-                                                          0.02),
-                                                  Row(
-                                                    crossAxisAlignment:
-                                                    CrossAxisAlignment
-                                                        .start,
-                                                    children: List.generate(
-                                                      5,
-                                                          (index) {
-                                                        return (index <
-                                                            tripHistoryData
-                                                                .rideDriverRating)
-                                                            ? const Icon(
-                                                            Icons.star,
-                                                            size: 25,
-                                                            color: AppColors
-                                                                .primary)
-                                                            : Icon(
-                                                            Icons
-                                                                .star_border_outlined,
-                                                            size: 25,
-                                                            color: AppColors
-                                                                .darkGrey);
-                                                      },
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-
-                                        SizedBox(height: size.width * 0.5),
-                                      ],
-                                    ),
-                                  );
-                                })),
-                          ],
-                        ),
-                      ),
-
-                      // Bottom Action Buttons
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: (tripHistoryData.isCompleted == 1 &&
-                            tripHistoryData.supportTicketExist ==
-                                true &&
-                            arg.isSupportTicketEnabled == '1')
-                            ? Padding(
-                          padding: const EdgeInsets.only(
-                              left: 10,
-                              top: 10,
-                              right: 10,
-                              bottom: 10),
-                          child: _TicketStatusChip(
-                            width: size.width * 0.5,
-                            ticketId:
-                            tripHistoryData.supportTicketId,
-                            status:
-                            tripHistoryData.supportTicketStatus,
-                          ),
-                        )
-                            : (tripHistoryData.isCompleted == 1)
-                            ? Column(
-                          children: [
-                            const SizedBox(height: 10),
-                            Container(
-                              decoration: BoxDecoration(
-                                color:
-                                AppColors.surface(context),
-                                border: Border(
-                                  top: BorderSide(
-                                      color: AppColors
-                                          .surfaceBorder(
-                                          context)),
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  Padding(
-                                    padding: EdgeInsets.fromLTRB(
-                                        size.width * 0.05,
-                                        size.width * 0.05,
-                                        size.width * 0.05,
-                                        size.width * 0),
-                                    child: CustomButton(
-                                        width: size.width,
-                                        buttonName:
-                                        AppLocalizations.of(
-                                            context)!
-                                            .downloadInvoice,
-                                        onTap: () {
-                                          context
-                                              .read<AccBloc>()
-                                              .add(
-                                            DownloadInvoiceUserEvent(
-                                                journeyId:
-                                                tripHistoryData
-                                                    .id
-                                                    .toString()),
-                                          );
-                                        }),
-                                  ),
-                                  if (arg.isSupportTicketEnabled ==
-                                      '1')
-                                    Padding(
-                                      padding: EdgeInsets.all(
-                                          size.width * 0.05),
-                                      child: GestureDetector(
-                                        onDoubleTap: null,
-                                        onDoubleTapDown: null,
-                                        onTap: () {
-                                          context.read<AccBloc>().add(
-                                              CreateSupportTicketEvent(
-                                                  requestId:
-                                                  tripHistoryData
-                                                      .requestNumber,
-                                                  isFromRequest:
-                                                  true,
-                                                  index: arg
-                                                      .historyIndex,
-                                                  pageNumber: arg
-                                                      .pageNumber));
-                                        },
-                                        child: Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment
-                                              .center,
-                                          children: [
-                                            const Icon(
-                                                Icons
-                                                    .report_outlined,
-                                                size: 20,
-                                                color: AppColors
-                                                    .red),
-                                            SizedBox(
-                                                width: size
-                                                    .width *
-                                                    0.01),
-                                            MyText(
-                                              text: AppLocalizations.of(
-                                                  context)!
-                                                  .reportIssues,
-                                              textStyle: Theme.of(
-                                                  context)
-                                                  .textTheme
-                                                  .bodyMedium!
-                                                  .copyWith(
-                                                  color: AppColors
-                                                      .red,
-                                                  fontWeight:
-                                                  FontWeight
-                                                      .bold,
-                                                  fontSize:
-                                                  13),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
+              body: tripHistoryData == null
+                  ? const SizedBox.shrink()
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                      children: [
+                        if (tripHistoryData.isCompleted == 1 ||
+                            tripHistoryData.isCancelled == 1)
+                          _spaced(
+                              TripFarebreakupWidget(cont: context, arg: arg)),
+                        if (tripHistoryData.isBidRide == 1 &&
+                            tripHistoryData.requestBill != null &&
+                            tripHistoryData.requestBill.data.driverTips != '0')
+                          _spaced(HistoryDetailCard(
+                            icon: Icons.volunteer_activism_rounded,
+                            gradient: RideVisuals.green,
+                            title: l10n.tips,
+                            child: Text(
+                                '${tripHistoryData.requestBill.data.requestedCurrencySymbol} ${tripHistoryData.requestBill.data.driverTips}',
+                                style: HistoryDetailStyle.text(context)
+                                    .copyWith(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700)),
+                          )),
+                        _spaced(
+                            TripDriverDetailsWidget(cont: context, arg: arg)),
+                        _spaced(TripVehicleInfoWidget(cont: context, arg: arg)),
+                        if (tripHistoryData.transportType == 'delivery' &&
+                            tripHistoryData.requestProofs.data.isNotEmpty)
+                          _spaced(HistoryDetailCard(
+                            child: InkWell(
+                              onTap: () {
+                                if (arg.historyData.requestProofs.data
+                                    .isNotEmpty) {
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) => DeliveryProofViewPage(
+                                              images: arg.historyData
+                                                  .requestProofs.data)));
+                                }
+                              },
+                              child: Row(children: [
+                                const RideColorBadge(
+                                    icon: Icons.image_rounded,
+                                    gradient: RideVisuals.blue,
+                                    size: 34,
+                                    iconSize: 18),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                    child: Text(l10n.loadShipmentProof,
+                                        style:
+                                            HistoryDetailStyle.text(context))),
+                                const Icon(Icons.chevron_right_rounded,
+                                    size: 20),
+                              ]),
                             ),
-                          ],
-                        )
-                            : (tripHistoryData.isLater &&
-                            tripHistoryData.isCancelled == 0)
-                            ? Container(
-                          width: size.width,
+                          )),
+                        _spaced(HistoryDetailCard(
+                          title: l10n.tripId,
+                          icon: Icons.confirmation_number_outlined,
+                          gradient: RideVisuals.blue,
+                          child: Text(tripHistoryData.requestNumber,
+                              style: HistoryDetailStyle.text(context).copyWith(
+                                  fontSize: 16, fontWeight: FontWeight.w600)),
+                        )),
+                        if (tripHistoryData.isCompleted == 1)
+                          HistoryDetailCard(
+                            title: l10n.ratings,
+                            icon: Icons.star_rounded,
+                            gradient: RideVisuals.amber,
+                            child: Semantics(
+                              label:
+                                  '${l10n.ratings}: ${tripHistoryData.rideDriverRating} / 5',
+                              child: ExcludeSemantics(
+                                  child: Wrap(
+                                spacing: 4,
+                                children: List.generate(
+                                    5,
+                                    (index) => Icon(
+                                        index < tripHistoryData.rideDriverRating
+                                            ? Icons.star_rounded
+                                            : Icons.star_outline_rounded,
+                                        size: 26,
+                                        color: index <
+                                                tripHistoryData.rideDriverRating
+                                            ? const Color(0xFFE6862A)
+                                            : HistoryDetailStyle.muted(
+                                                context))),
+                              )),
+                            ),
+                          ),
+                      ],
+                    ),
+              bottomNavigationBar: tripHistoryData == null
+                  ? null
+                  : tripHistoryData.isCompleted == 1 ||
+                          (tripHistoryData.isLater &&
+                              tripHistoryData.isCancelled == 0)
+                      ? Container(
                           decoration: BoxDecoration(
-                            color:
-                            AppColors.surface(context),
-                            border: Border(
-                              top: BorderSide(
-                                  color: AppColors
-                                      .surfaceBorder(
-                                      context)),
-                            ),
-                          ),
-                          child: Padding(
-                            padding:
-                            const EdgeInsets.all(8),
+                              color: surface,
+                              border: Border(
+                                  top: BorderSide(
+                                      color:
+                                          HistoryDetailStyle.border(context)))),
+                          child: SafeArea(
+                            top: false,
+                            minimum: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                             child: Column(
-                              children: [
-                                const SizedBox(height: 10),
-                                CustomButton(
-                                  width: size.width * 0.9,
-                                  height:
-                                  size.width * 0.12,
-                                  buttonName:
-                                  AppLocalizations.of(
-                                      context)!
-                                      .cancel,
-                                  borderRadius: 20,
-                                  onTap: () {
-                                    showModalBottomSheet(
-                                        context: context,
-                                        isScrollControlled:
-                                        false,
-                                        enableDrag: false,
-                                        isDismissible:
-                                        true,
-                                        builder: (_) {
-                                          return CancelRideWidget(
-                                              cont:
-                                              context,
-                                              requestId:
-                                              tripHistoryData
-                                                  .id);
-                                        });
-                                  },
-                                ),
-                                SizedBox(
-                                    height:
-                                    size.width * 0.02),
-                              ],
-                            ),
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (tripHistoryData.isCompleted == 1 &&
+                                      tripHistoryData.supportTicketExist &&
+                                      arg.isSupportTicketEnabled == '1')
+                                    _TicketStatusChip(
+                                        ticketId:
+                                            tripHistoryData.supportTicketId,
+                                        status:
+                                            tripHistoryData.supportTicketStatus)
+                                  else if (tripHistoryData.isCompleted ==
+                                      1) ...[
+                                    HistoryDetailButton(
+                                      label: l10n.downloadInvoice,
+                                      icon: Icons.download_rounded,
+                                      onPressed: () => context
+                                          .read<AccBloc>()
+                                          .add(DownloadInvoiceUserEvent(
+                                              journeyId: tripHistoryData.id
+                                                  .toString())),
+                                    ),
+                                    if (arg.isSupportTicketEnabled == '1')
+                                      TextButton.icon(
+                                        onPressed: () => context
+                                            .read<AccBloc>()
+                                            .add(CreateSupportTicketEvent(
+                                                requestId: tripHistoryData
+                                                    .requestNumber,
+                                                isFromRequest: true,
+                                                index: arg.historyIndex,
+                                                pageNumber: arg.pageNumber)),
+                                        icon: const Icon(
+                                            Icons.help_outline_rounded,
+                                            size: 18),
+                                        label: Text(l10n.reportIssues,
+                                            textAlign: TextAlign.center,
+                                            style:
+                                                HistoryDetailStyle.text(context)
+                                                    .copyWith(
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w600)),
+                                      ),
+                                  ] else
+                                    HistoryDetailButton(
+                                      label: l10n.cancel,
+                                      icon: Icons.close_rounded,
+                                      onPressed: () => showModalBottomSheet<
+                                              void>(
+                                          context: context,
+                                          isScrollControlled: true,
+                                          useSafeArea: true,
+                                          backgroundColor: Colors.transparent,
+                                          enableDrag: false,
+                                          isDismissible: true,
+                                          builder: (_) => CancelRideWidget(
+                                              cont: context,
+                                              requestId: tripHistoryData.id)),
+                                    ),
+                                ]),
                           ),
                         )
-                            : Container(),
-                      )
-                    ],
-                  ),
-                )
-                    : const SizedBox(),
-              ),
+                      : null,
             ),
           );
         }),
       ),
     );
   }
+
+  Widget _spaced(Widget child) =>
+      Padding(padding: const EdgeInsets.only(bottom: 14), child: child);
 }
 
-/// Support-ticket status pill — replaces the old flat grey box (which used
-/// `Theme.of(context).disabledColor` as both fill and border) with a chip
-/// tinted to the actual status color, matching the rest of the brand system.
 class _TicketStatusChip extends StatelessWidget {
-  final double width;
+  const _TicketStatusChip({required this.ticketId, required this.status});
   final String ticketId;
   final int status;
 
-  const _TicketStatusChip({
-    required this.width,
-    required this.ticketId,
-    required this.status,
-  });
-
   @override
   Widget build(BuildContext context) {
-    final Color statusColor = status == 1
+    final l10n = AppLocalizations.of(context)!;
+    final statusColor = status == 1
         ? AppColors.blue
         : status == 2
-        ? AppColors.orange
-        : AppColors.red;
-    final String statusLabel = status == 1
-        ? AppLocalizations.of(context)!.pending
+            ? const Color(0xFFE6862A)
+            : AppColors.routeGreen;
+    final statusLabel = status == 1
+        ? l10n.pending
         : status == 2
-        ? AppLocalizations.of(context)!.acknowledged
-        : AppLocalizations.of(context)!.closed;
-
-    return Container(
-      width: width,
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-      decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.12),
-        border: Border.all(color: statusColor.withOpacity(0.4)),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              MyText(
-                text: "${AppLocalizations.of(context)!.ticketCreated} :",
-                textStyle: Theme.of(context).textTheme.bodyMedium,
-              ),
-              SizedBox(width: width * 0.04),
-              MyText(
-                text: ticketId,
-                textStyle: Theme.of(context)
-                    .textTheme
-                    .bodyMedium!
-                    .copyWith(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          MyText(
-            text: statusLabel,
-            textStyle: Theme.of(context)
-                .textTheme
-                .bodyLarge!
-                .copyWith(color: statusColor, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
+            ? l10n.acknowledged
+            : l10n.closed;
+    return HistoryDetailCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('${l10n.ticketCreated}: $ticketId',
+            style: HistoryDetailStyle.text(context)
+                .copyWith(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        Text(statusLabel,
+            style: HistoryDetailStyle.text(context)
+                .copyWith(color: statusColor, fontWeight: FontWeight.w700)),
+      ]),
     );
   }
 }

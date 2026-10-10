@@ -602,6 +602,15 @@
     "view_document": "Sənədə bax",
     "uploaded_approved": "Yükləndi və təsdiqləndi",
      "document": "Sənəd",
-    "documents": "Sənədlər"
-
-        }
+    "documents": "Sənədlər",
+  "rideCall": "Zəng",
+  "noDriversNearbyTitle": "Yaxınlıqda sürücü yoxdur",
+  "noDriversNearbyBody": "Hazırda bu səfər üçün sürücü tapa bilmədik.",
+  "noDriversNearbyHint": "Bir az sonra yenidən cəhd edin və ya götürülmə yerini dəyişin.",
+  "backToRide": "Səfərə qayıt",
+  "cancelRideConfirmationTitle": "Bu səfəri ləğv edək?",
+  "cancelRideSearchBody": "Axtarışa davam edə və ya bu sorğunu ləğv edə bilərsiniz.",
+  "keepSearching": "Axtarışa davam et",
+    "profilePhoto": "Profil şəkli",
+    "changeProfilePhoto": "Şəkli dəyiş"
+}

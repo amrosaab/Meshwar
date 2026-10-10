@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../../common/common.dart';
-import '../../../../../../core/utils/custom_loader.dart';
 import '../../../../../../core/utils/custom_text.dart';
 import '../../../../../../core/utils/custom_textfield.dart';
 import '../../../../../../l10n/app_localizations.dart';
@@ -222,8 +221,8 @@ class EtaListViewWidget extends StatelessWidget {
                       text: AppLocalizations.of(context)!.rideDetails,
                       textStyle:
                           Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 17,
                               ),
                     ),
                     if (bookingBloc.showSharedRide)
@@ -342,33 +341,47 @@ class EtaListViewWidget extends StatelessWidget {
                           bottom: size.width * 0.025,
                         ),
                         child: Container(
-                          padding: EdgeInsets.all(size.width * 0.04),
+                          padding: EdgeInsets.all(size.width * 0.035),
                           decoration: BoxDecoration(
                             color: Theme.of(context).scaffoldBackgroundColor,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
-                                color: Theme.of(context)
-                                    .shadowColor
-                                    .withAlpha((0.1 * 255).toInt()),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
                               ),
                             ],
                           ),
                           child: Row(
                             children: [
                               Container(
-                                padding: EdgeInsets.all(size.width * 0.025),
+                                width: size.width * 0.105,
+                                height: size.width * 0.105,
+                                alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: AppColors.yellowColor
-                                      .withAlpha((0.15 * 255).toInt()),
-                                  borderRadius: BorderRadius.circular(12),
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Color(0xFFFFD76A),
+                                      Color(0xFFF0A93A),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(13),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFF0A93A)
+                                          .withValues(alpha: 0.32),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
                                 child: Image.asset(
                                   AppImages.ticketImage,
-                                  width: size.width * 0.05,
-                                  color: const Color.fromARGB(255, 255, 196, 0),
+                                  width: size.width * 0.045,
+                                  color: Colors.white,
                                 ),
                               ),
                               SizedBox(width: size.width * 0.03),
@@ -376,14 +389,14 @@ class EtaListViewWidget extends StatelessWidget {
                                 child: Text(
                                   AppLocalizations.of(context)!.coupon,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w700,
                                     fontSize: 15,
                                   ),
                                 ),
                               ),
                               Icon(
                                 Icons.arrow_forward_ios,
-                                size: size.width * 0.04,
+                                size: size.width * 0.035,
                                 color: AppColors.hintColor,
                               ),
                             ],
@@ -404,19 +417,19 @@ class EtaListViewWidget extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
                   child: CustomTextField(
                     controller:
                         context.read<BookingBloc>().instructionsController,
-                    borderRadius: 16,
+                    borderRadius: 14,
                     filled: true,
                     // fillColor: Theme.of(context).cardColor,
                     hintText:
@@ -911,12 +924,19 @@ class _ScheduleRideButton extends StatelessWidget {
       },
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: size.width * 0.03,
-          vertical: size.width * 0.015,
+          horizontal: size.width * 0.032,
+          vertical: size.width * 0.017,
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Theme.of(context).hintColor),
+          gradient: AppColors.beaconGradient,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.meshwarRed.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -925,7 +945,7 @@ class _ScheduleRideButton extends StatelessWidget {
               bookingBloc.showDateTime.isEmpty
                   ? Icons.calendar_today_outlined
                   : Icons.access_time,
-              color: Theme.of(context).primaryColorDark,
+              color: Colors.white,
               size: size.width * 0.04,
             ),
             SizedBox(width: size.width * 0.01),
@@ -933,9 +953,9 @@ class _ScheduleRideButton extends StatelessWidget {
               bookingBloc.showDateTime.isEmpty
                   ? AppLocalizations.of(context)!.now
                   : bookingBloc.showDateTime,
-              style: TextStyle(
-                color: Theme.of(context).primaryColorDark,
-                fontWeight: FontWeight.w500,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),
             ),
@@ -990,45 +1010,78 @@ class _EtaVehicleCard extends StatelessWidget {
           bookingBloc.etaScrollController.jumpTo(selectedSize);
           bookingBloc.checkNearByEta(bookingBloc.nearByDriversData, thisValue);
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
           decoration: BoxDecoration(
-            // color: const Color.fromARGB(255, 244, 246, 251),
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).primaryColor.withAlpha((0.02 * 255).toInt()),
-                Theme.of(context).primaryColor.withAlpha((0.04 * 255).toInt())
-              ],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: isRecommended
-                ? Border.all(color: AppColors.primary, width: 1.5)
-                : null,
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: isRecommended
+                    ? AppColors.primary.withValues(alpha: 0.18)
+                    : Colors.black.withValues(alpha: 0.05),
+                blurRadius: isRecommended ? 22 : 16,
+                spreadRadius: isRecommended ? -2 : 0,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: Padding(
             padding: EdgeInsets.all(size.width * 0.035),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                /// VEHICLE IMAGE
+                /// VEHICLE IMAGE — a gradient badge with a tinted car-icon
+                /// placeholder instead of a blank/black box while loading
+                /// or if the vehicle icon URL fails.
                 Container(
-                  height: size.width * 0.15,
-                  width: size.width * 0.15,
+                  height: size.width * 0.14,
+                  width: size.width * 0.14,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: AppColors.beaconGradient,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.meshwarRed.withValues(alpha: 0.32),
+                        blurRadius: 12,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: CachedNetworkImage(
-                      imageUrl: eta.vehicleIcon,
-                      fit: BoxFit.fill,
-                      placeholder: (context, url) =>
-                          const Center(child: Loader()),
-                      errorWidget: (context, url, error) => const SizedBox(),
-                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    // CachedNetworkImage's errorWidget doesn't reliably
+                    // fire for an empty/null URL (a common state before
+                    // the vehicle icon has loaded from the backend), so
+                    // that case is handled explicitly here instead of
+                    // relying on errorWidget alone.
+                    child: (eta.vehicleIcon == null ||
+                            (eta.vehicleIcon as String).isEmpty)
+                        ? Center(
+                            child: Icon(
+                              Icons.directions_car_filled_rounded,
+                              color: Colors.white,
+                              size: size.width * 0.065,
+                            ),
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: eta.vehicleIcon,
+                            fit: BoxFit.fill,
+                            placeholder: (context, url) => Center(
+                              child: Icon(
+                                Icons.directions_car_filled_rounded,
+                                color: Colors.white.withValues(alpha: 0.6),
+                                size: size.width * 0.065,
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Center(
+                              child: Icon(
+                                Icons.directions_car_filled_rounded,
+                                color: Colors.white,
+                                size: size.width * 0.065,
+                              ),
+                            ),
+                          ),
                   ),
                 ),
 
@@ -1050,8 +1103,8 @@ class _EtaVehicleCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
                                 color: Theme.of(context).primaryColorDark,
                               ),
                             ),
@@ -1066,64 +1119,58 @@ class _EtaVehicleCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           /// Capacity
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: size.width * 0.02,
-                              vertical: size.width * 0.01,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .scaffoldBackgroundColor
-                                  .withAlpha((0.2 * 255).toInt()),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                (bookingBloc.transportType != 'delivery')
-                                    ? Icon(
-                                        Icons.people_outline,
-                                        size: size.width * 0.035,
-                                        color: AppColors.hintColor,
-                                      )
-                                    : Image.asset(
-                                        AppImages.deliveryCapacity,
-                                        color: AppColors.hintColor,
-                                        height: 12,
-                                        width: 12,
-                                      ),
-                                SizedBox(width: size.width * 0.01),
-                                Text(
-                                  '${eta.capacity}',
-                                  style: const TextStyle(
-                                    color: AppColors.hintColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                          (bookingBloc.transportType != 'delivery')
+                              ? Icon(
+                                  Icons.people_outline,
+                                  size: size.width * 0.035,
+                                  color: AppColors.hintColor,
+                                )
+                              : Image.asset(
+                                  AppImages.deliveryCapacity,
+                                  color: AppColors.hintColor,
+                                  height: 12,
+                                  width: 12,
                                 ),
-                              ],
+                          SizedBox(width: size.width * 0.01),
+                          Text(
+                            '${eta.capacity}',
+                            style: const TextStyle(
+                              color: AppColors.hintColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
 
-                          SizedBox(width: size.width * 0.03),
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: size.width * 0.015),
+                            child: const Text(
+                              '·',
+                              style: TextStyle(
+                                color: AppColors.hintColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
 
                           /// ETA
                           Icon(
                             Icons.access_time,
                             color: Theme.of(context).primaryColor,
-                            size: size.width * 0.04,
+                            size: size.width * 0.035,
                           ),
                           SizedBox(width: size.width * 0.01),
                           Text(
                             _getDuration(),
                             style: const TextStyle(
                               color: AppColors.hintColor,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
 
-                          // const Spacer(),
+                          const Spacer(),
 
                           /// INFO ICON (Proper Right Alignment)
                           InkWell(
@@ -1137,7 +1184,7 @@ class _EtaVehicleCard extends StatelessWidget {
                               child: Icon(
                                 Icons.info_outline,
                                 color: AppColors.hintColor,
-                                size: size.width * 0.045,
+                                size: size.width * 0.04,
                               ),
                             ),
                           ),
@@ -1171,8 +1218,8 @@ class _EtaVehicleCard extends StatelessWidget {
                           ? '${eta.currency}${eta.pricePerDistance.toStringAsFixed(2)}'
                           : '${eta.currency}${(eta.hasDiscount && !bookingBloc.showBiddingVehicles) ? eta.discountTotal.toStringAsFixed(2) : eta.total.toStringAsFixed(2)}',
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
                         color: (eta.hasDiscount &&
                                 !bookingBloc.showBiddingVehicles)
                             ? Theme.of(context).primaryColor
@@ -1255,30 +1302,51 @@ class _PaymentMethodTile extends StatelessWidget {
                 return SelectPaymentMethodWidget(cont: context);
               });
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
           width: size.width,
-          padding: EdgeInsets.all(size.width * 0.04),
+          padding: EdgeInsets.all(size.width * 0.035),
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context)
-                    .shadowColor
-                    .withAlpha((0.1 * 255).toInt()),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
           child: Row(
             children: [
               Container(
-                padding: EdgeInsets.all(size.width * 0.025),
+                width: size.width * 0.105,
+                height: size.width * 0.105,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withAlpha((0.1 * 255).toInt()),
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isInsufficientBalance
+                        ? [
+                            const Color(0xFFF0546F),
+                            AppColors.meshwarRed,
+                          ]
+                        : const [
+                            Color(0xFFFFB84D),
+                            Color(0xFFE6862A),
+                          ],
+                  ),
+                  borderRadius: BorderRadius.circular(13),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isInsufficientBalance
+                              ? AppColors.meshwarRed
+                              : const Color(0xFFE6862A))
+                          .withValues(alpha: 0.32),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Icon(
                   bookingBloc.isSavedCardChoose
@@ -1288,9 +1356,8 @@ class _PaymentMethodTile extends StatelessWidget {
                           : bookingBloc.selectedPaymentType == 'card'
                               ? Icons.credit_card_rounded
                               : Icons.account_balance_wallet_outlined,
-                  size: size.width * 0.05,
-                  color:
-                      isInsufficientBalance ? AppColors.red : AppColors.primary,
+                  size: size.width * 0.045,
+                  color: Colors.white,
                 ),
               ),
               SizedBox(width: size.width * 0.03),
@@ -1302,7 +1369,7 @@ class _PaymentMethodTile extends StatelessWidget {
                       AppLocalizations.of(context)!.paymentMethod,
                       style: const TextStyle(
                         color: AppColors.hintColor,
-                        fontSize: 12,
+                        fontSize: 11,
                       ),
                     ),
                     SizedBox(height: size.width * 0.005),
@@ -1316,7 +1383,7 @@ class _PaymentMethodTile extends StatelessWidget {
                                   : bookingBloc.selectedPaymentType,
                       style: TextStyle(
                         color: isInsufficientBalance ? AppColors.red : null,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         fontSize: 15,
                       ),
                     ),
@@ -1325,7 +1392,7 @@ class _PaymentMethodTile extends StatelessWidget {
               ),
               Icon(
                 Icons.arrow_forward_ios,
-                size: size.width * 0.04,
+                size: size.width * 0.035,
                 color: AppColors.hintColor,
               ),
             ],
@@ -1390,36 +1457,45 @@ class _PreferencesTile extends StatelessWidget {
         ),
         child: Container(
           width: size.width,
-          padding: EdgeInsets.all(size.width * 0.04),
+          padding: EdgeInsets.all(size.width * 0.035),
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context)
-                    .shadowColor
-                    .withAlpha((0.1 * 255).toInt()),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
           child: Row(
             children: [
               Container(
-                padding: EdgeInsets.all(size.width * 0.025),
+                width: size.width * 0.105,
+                height: size.width * 0.105,
                 decoration: BoxDecoration(
-                  color: hasSelectedPreferences
-                      ? AppColors.primary.withAlpha((0.1 * 255).toInt())
-                      : AppColors.borderColor.withAlpha((0.5 * 255).toInt()),
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF6BA7F5),
+                      Color(0xFF3A72D4),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(13),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF3A72D4).withValues(alpha: 0.32),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Icon(
                   Icons.tune,
-                  size: size.width * 0.05,
-                  color: hasSelectedPreferences
-                      ? AppColors.primary
-                      : AppColors.greyHeader,
+                  size: size.width * 0.045,
+                  color: Colors.white,
                 ),
               ),
               SizedBox(width: size.width * 0.03),
@@ -1431,7 +1507,7 @@ class _PreferencesTile extends StatelessWidget {
                       AppLocalizations.of(context)!.preferences,
                       style: TextStyle(
                         color: hasPreferences ? null : AppColors.greyHeader,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         fontSize: 15,
                       ),
                     ),
@@ -1452,7 +1528,7 @@ class _PreferencesTile extends StatelessWidget {
               ),
               Icon(
                 Icons.arrow_forward_ios,
-                size: size.width * 0.04,
+                size: size.width * 0.035,
                 color: AppColors.hintColor,
               ),
             ],
@@ -1502,33 +1578,33 @@ class _CouponTile extends StatelessWidget {
             },
           );
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: EdgeInsets.all(size.width * 0.04),
+          padding: EdgeInsets.all(size.width * 0.035),
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context)
-                    .shadowColor
-                    .withAlpha((0.1 * 255).toInt()),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
           child: Row(
             children: [
               Container(
-                padding: EdgeInsets.all(size.width * 0.025),
+                width: size.width * 0.1,
+                height: size.width * 0.1,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: AppColors.yellowColor.withAlpha((0.15 * 255).toInt()),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Image.asset(
                   AppImages.ticketImage,
-                  width: size.width * 0.05,
+                  width: size.width * 0.045,
                   color: const Color.fromARGB(255, 255, 196, 0),
                 ),
               ),
@@ -1537,14 +1613,14 @@ class _CouponTile extends StatelessWidget {
                 child: Text(
                   AppLocalizations.of(context)!.coupon,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
                   ),
                 ),
               ),
               Icon(
                 Icons.arrow_forward_ios,
-                size: size.width * 0.04,
+                size: size.width * 0.035,
                 color: AppColors.hintColor,
               ),
             ],

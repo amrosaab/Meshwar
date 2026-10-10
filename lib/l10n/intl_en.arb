@@ -600,5 +600,15 @@
             "view_document": "View document",
             "uploaded_approved": "Uploaded and approved",
              "document": "Document",
-            "documents": "Documents"
-        }
+            "documents": "Documents",
+  "rideCall": "Call",
+  "noDriversNearbyTitle": "No drivers nearby",
+  "noDriversNearbyBody": "We couldn’t find a driver for this ride right now.",
+  "noDriversNearbyHint": "Try again in a few moments, or adjust your pickup location.",
+  "backToRide": "Back to ride",
+  "cancelRideConfirmationTitle": "Cancel this ride?",
+  "cancelRideSearchBody": "You can keep searching, or cancel this request.",
+  "keepSearching": "Keep searching",
+    "profilePhoto": "Profile photo",
+    "changeProfilePhoto": "Change photo"
+}

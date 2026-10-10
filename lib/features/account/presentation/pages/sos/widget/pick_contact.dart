@@ -1,135 +1,92 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../../../../../common/app_colors.dart';
-import '../../../../../../core/utils/custom_button.dart';
-import '../../../../../../core/utils/custom_text.dart';
+import '../../../../../../common/ride_visuals.dart';
 import '../../../../../../l10n/app_localizations.dart';
 import '../../../../application/acc_bloc.dart';
+import '../../../widgets/account_content.dart';
+import 'sos_content.dart';
 
 class PickContact extends StatelessWidget {
   const PickContact({super.key});
-
   @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-    return BlocBuilder<AccBloc, AccState>(
-      builder: (context, state) {
-        return Scaffold(
-          body: Container(
-            width: size.width,
-            height: size.height,
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: size.width * 0.15),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        MyText(
-                            text: AppLocalizations.of(context)!.selectContact,
-                            textStyle: Theme.of(context).textTheme.bodyLarge),
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                          child: MyText(
-                              text: AppLocalizations.of(context)!.cancel,
-                              textStyle: Theme.of(context).textTheme.bodyLarge),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: size.width * 0.03),
-                    SizedBox(
-                      height: size.height * 0.73,
-                      child: RawScrollbar(
-                        child: ListView.builder(
-                          itemCount:
-                          context.read<AccBloc>().contactsList.length,
-                          shrinkWrap: true,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.only(bottom: 16),
-                          itemBuilder: (context, index) {
-                            final contact = context
-                                .read<AccBloc>()
-                                .contactsList
-                                .elementAt(index);
-                            return RadioListTile(
-                              value: contact,
-                              contentPadding: EdgeInsets.zero,
-                              dense: true,
-                              controlAffinity: ListTileControlAffinity.trailing,
-                              activeColor: Theme.of(context).primaryColorDark,
-                              groupValue:
-                              context.read<AccBloc>().selectedContact,
-                              onChanged: (value) {
-                                context.read<AccBloc>().selectedContact =
-                                    contact;
-                                context.read<AccBloc>().add(AccUpdateEvent());
-                              },
-                              title: MyText(text: contact.name, maxLines: 2),
-                              subtitle:
-                              MyText(text: contact.number, maxLines: 1),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: size.width * 0.03),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          bottomNavigationBar: Container(
-            decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                boxShadow: AppColors.surfaceShadow(context)),
-            child: Padding(
-              padding: EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  bottom: MediaQuery.viewInsetsOf(context).bottom),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(height: size.width * 0.03),
-                  CustomButton(
-                    width: size.width,
-                    buttonColor: Theme.of(context).primaryColor,
-                    buttonName: AppLocalizations.of(context)!.confirm,
-                    onTap: () {
-                      context.read<AccBloc>().add(
-                        AddContactEvent(
-                          name:
-                          context.read<AccBloc>().selectedContact.name,
-                          number: context
-                              .read<AccBloc>()
-                              .selectedContact
-                              .number,
-                        ),
-                      );
-                      context.read<AccBloc>().add(SosLoadingEvent());
-                      Navigator.pop(context);
-                    },
-                  ),
-                  SizedBox(height: size.width * 0.15),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) =>
+      BlocBuilder<AccBloc, AccState>(builder: (context, state) {
+        final bloc = context.read<AccBloc>();
+        final l10n = AppLocalizations.of(context)!;
+        final valid = bloc.selectedContact.name.trim().isNotEmpty &&
+            bloc.selectedContact.number.trim().isNotEmpty;
+        return Directionality(
+            textDirection: bloc.textDirection == 'rtl'
+                ? TextDirection.rtl
+                : TextDirection.ltr,
+            child: Scaffold(
+              backgroundColor: RideVisuals.canvas(context),
+              appBar: AppBar(
+                  backgroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.bgAsphaltLight
+                          : Colors.white,
+                  surfaceTintColor: Colors.transparent,
+                  elevation: 0,
+                  centerTitle: false,
+                  toolbarHeight:
+                      MediaQuery.textScalerOf(context).scale(22) > 32 ? 96 : 64,
+                  foregroundColor: AccountStyle.ink(context),
+                  leading: IconButton(
+                      tooltip: l10n.cancel,
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close_rounded)),
+                  title: Text(l10n.selectContact,
+                      maxLines: 2,
+                      style: AccountStyle.text(context).copyWith(
+                          fontSize: 22, fontWeight: FontWeight.w700))),
+              body: bloc.contactsList.isEmpty
+                  ? Center(
+                      child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Text(l10n.noDataAvailable,
+                              textAlign: TextAlign.center)))
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: bloc.contactsList.length,
+                      separatorBuilder: (_, index) =>
+                          const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final contact = bloc.contactsList[index];
+                        return SosContactCard(
+                            name: contact.name,
+                            number: contact.number,
+                            selected: identical(contact, bloc.selectedContact),
+                            onSelect: () {
+                              bloc.selectedContact = contact;
+                              bloc.add(AccUpdateEvent());
+                            });
+                      }),
+              bottomNavigationBar: SafeArea(
+                  top: false,
+                  minimum: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                  child: FilledButton(
+                      onPressed: valid && !bloc.isLoading
+                          ? () {
+                              bloc.add(AddContactEvent(
+                                  name: bloc.selectedContact.name,
+                                  number: bloc.selectedContact.number));
+                              Navigator.pop(context);
+                            }
+                          : null,
+                      style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.meshwarRed,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size.fromHeight(58),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 16),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30))),
+                      child: Text(l10n.confirm,
+                          style: AccountStyle.text(context).copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700)))),
+            ));
+      });
 }

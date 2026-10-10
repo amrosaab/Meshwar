@@ -6,10 +6,9 @@ import FlutterMacOS
 import Foundation
 
 import audioplayers_darwin
-import clipboard
 import connectivity_plus
 import device_info_plus
-import file_picker
+import file_picker_darwin
 import file_selector_macos
 import firebase_auth
 import firebase_core
@@ -30,7 +29,6 @@ import webview_flutter_wkwebview
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   AudioplayersDarwinPlugin.register(with: registry.registrar(forPlugin: "AudioplayersDarwinPlugin"))
-  ClipboardPlugin.register(with: registry.registrar(forPlugin: "ClipboardPlugin"))
   ConnectivityPlusPlugin.register(with: registry.registrar(forPlugin: "ConnectivityPlusPlugin"))
   DeviceInfoPlusMacosPlugin.register(with: registry.registrar(forPlugin: "DeviceInfoPlusMacosPlugin"))
   FilePickerPlugin.register(with: registry.registrar(forPlugin: "FilePickerPlugin"))

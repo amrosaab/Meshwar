@@ -2,283 +2,167 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../../common/app_colors.dart';
-import '../../../../../../common/app_images.dart';
-import '../../../../../../common/liquid_glass_container.dart';
-import '../../../../../../core/utils/custom_appbar.dart';
-import '../../../../../../core/utils/custom_dialoges.dart';
-import '../../../../../../core/utils/custom_loader.dart';
-import '../../../../../../core/utils/custom_text.dart';
+import '../../../../../../common/ride_visuals.dart';
 import '../../../../../../l10n/app_localizations.dart';
-import '../../../../../auth/application/auth_bloc.dart';
+import '../../../widgets/account_content.dart';
 import '../../../../application/acc_bloc.dart';
 import '../widget/notification_card_widget.dart';
+import '../widget/notification_content.dart';
 import '../widget/notification_page_shimmer.dart';
 
 class NotificationPage extends StatelessWidget {
   static const String routeName = '/notification';
-
   const NotificationPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-    return BlocProvider(
-      create: (context) => AccBloc()
-        ..add(AccGetDirectionEvent())
-        ..add(NotificationGetEvent()),
-      child: BlocListener<AccBloc, AccState>(
-        listener: (context, state) {
-          if (state is AuthInitialState) {
-            CustomLoader.loader(context);
-          } else if (state is NotificationDeletedSuccess) {
-            Navigator.of(context).pop();
-            context.read<AccBloc>().add(NotificationGetEvent());
-          } else if (state is NotificationClearedSuccess) {
-            context.read<AccBloc>().add(NotificationGetEvent());
-          }
-        },
-        child: BlocBuilder<AccBloc, AccState>(builder: (context, state) {
-          return Directionality(
-            textDirection: context.read<AccBloc>().textDirection == 'rtl'
-                ? TextDirection.rtl
-                : TextDirection.ltr,
-            child: SafeArea(
-              top: false,
-              bottom: false,
+  Widget build(BuildContext context) => BlocProvider(
+        create: (_) => AccBloc()
+          ..add(AccGetDirectionEvent())
+          ..add(NotificationGetEvent()),
+        child: BlocListener<AccBloc, AccState>(
+          listener: (context, state) {
+            final bloc = context.read<AccBloc>();
+            final pagination = bloc.notificationPaginations?.pagination;
+            if (state is NotificationDeletedSuccess &&
+                bloc.notificationDatas.isEmpty &&
+                pagination != null &&
+                pagination.currentPage < pagination.totalPages) {
+              bloc.add(NotificationGetEvent());
+            }
+            if (state is NotificationFailure) {
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text(state.errorMessage)));
+            }
+          },
+          child: BlocBuilder<AccBloc, AccState>(builder: (context, state) {
+            final bloc = context.read<AccBloc>();
+            final l10n = AppLocalizations.of(context)!;
+            final pagination = bloc.notificationPaginations?.pagination;
+            final hasMore = pagination != null &&
+                pagination.currentPage < pagination.totalPages;
+            return Directionality(
+              textDirection: bloc.textDirection == 'rtl'
+                  ? TextDirection.rtl
+                  : TextDirection.ltr,
               child: Scaffold(
-                appBar: CustomAppBar(
-                  title: AppLocalizations.of(context)!.notifications,
-                  automaticallyImplyLeading: true,
-                  titleFontSize: 18,
+                backgroundColor: RideVisuals.canvas(context),
+                appBar: AppBar(
+                  backgroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.bgAsphaltLight
+                          : Colors.white,
+                  surfaceTintColor: Colors.transparent,
+                  elevation: 0,
+                  centerTitle: false,
+                  foregroundColor: AccountStyle.ink(context),
+                  toolbarHeight:
+                      MediaQuery.textScalerOf(context).scale(22) > 32 ? 96 : 64,
+                  title: Text(l10n.notifications,
+                      maxLines: 2,
+                      style: AccountStyle.text(context)
+                          .copyWith(fontSize: 22, fontWeight: FontWeight.w700)),
                 ),
-                body: CustomScrollView(
-                  slivers: [
+                body: CustomScrollView(slivers: [
+                  if (bloc.notificationDatas.isNotEmpty)
                     SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                            if (context.read<AccBloc>().isLoading) {
-                              return Padding(
-                                padding: EdgeInsets.only(
-                                  top: size.height * 0.03,
-                                ),
-                                child: NotificationShimmer(size: size),
-                              );
-                            } else if (context
-                                .read<AccBloc>()
-                                .notificationDatas
-                                .isEmpty &&
-                                !context.read<AccBloc>().isLoading) {
-                              return SizedBox(
-                                height: size.height * 0.65,
-                                child: Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: 32,
-                                        vertical: size.height * 0.08),
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        LiquidGlassContainer(
-                                          circular: true,
-                                          width: 148,
-                                          height: 148,
-                                          blurSigma: 14,
-                                          fillOpacity: 0.1,
-                                          child: Center(
-                                            child: Image.asset(
-                                              AppImages.notificationsNoData,
-                                              width: 92,
-                                              height: 92,
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          height: size.width * 0.05,
-                                        ),
-                                        MyText(
-                                          text: AppLocalizations.of(context)!
-                                              .noNotification,
-                                          textStyle: Theme.of(context).textTheme.titleMedium!.copyWith(
-                                            color: Theme.of(context).primaryColorDark,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18,
-                                          ),
-                                          maxLines: 2,
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
-                            if (index == 0) {
-                              return Padding(
-                                padding: EdgeInsets.only(
-                                    top: size.height * 0.03, bottom: 10),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    InkWell(
-                                      onTap: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (BuildContext _) {
-                                            return BlocProvider.value(
-                                                value: BlocProvider.of<AccBloc>(
-                                                    context),
-                                                child:
-                                                CustomDoubleButtonDialoge(
-                                                  title: AppLocalizations.of(
-                                                      context)!
-                                                      .clearNotifications,
-                                                  content: AppLocalizations.of(
-                                                      context)!
-                                                      .clearNotificationsText,
-                                                  yesBtnName:
-                                                  AppLocalizations.of(
-                                                      context)!
-                                                      .confirm,
-                                                  noBtnName:
-                                                  AppLocalizations.of(
-                                                      context)!
-                                                      .cancel,
-                                                  yesBtnFunc: () {
-                                                    context.read<AccBloc>().add(
-                                                        ClearAllNotificationsEvent());
-                                                    Navigator.pop(context);
-                                                  },
-                                                  noBtnFunc: () {
-                                                    Navigator.pop(context);
-                                                  },
-                                                ));
-                                          },
-                                        );
-                                      },
-                                      child: Text(
-                                        AppLocalizations.of(context)!.clearAll,
-                                        style: TextStyle(
-                                            color: Theme.of(context)
-                                                .primaryColorDark,
-                                            fontSize: 14),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            } else if (index <
-                                context
-                                    .read<AccBloc>()
-                                    .notificationDatas
-                                    .length +
-                                    1) {
-                              final datum = context
-                                  .read<AccBloc>()
-                                  .notificationDatas[index - 1];
-                              return NotificationCardWidget(
-                                  cont: context, notificationData: datum);
-                            } else {
-                              return null;
-                            }
-                          },
-                          childCount:
-                          context.read<AccBloc>().notificationDatas.length +
-                              1,
-                        ),
-                      ),
-                    ),
-                    if (context.read<AccBloc>().notificationPaginations !=
-                        null &&
-                        context
-                            .read<AccBloc>()
-                            .notificationPaginations!
-                            .pagination !=
-                            null &&
-                        context
-                            .read<AccBloc>()
-                            .notificationPaginations!
-                            .pagination
-                            .currentPage <
-                            context
-                                .read<AccBloc>()
-                                .notificationPaginations!
-                                .pagination
-                                .totalPages)
-                      SliverToBoxAdapter(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                        sliver: SliverToBoxAdapter(
+                            child: Align(
+                                alignment: AlignmentDirectional.centerEnd,
+                                child: TextButton.icon(
+                                  icon: const Icon(Icons.delete_sweep_outlined,
+                                      size: 20),
+                                  label: Text(l10n.clearAll),
+                                  style: TextButton.styleFrom(
+                                      foregroundColor:
+                                          Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? const Color(0xFFFF82A6)
+                                              : AppColors.meshwarRed),
+                                  onPressed: bloc.isLoading
+                                      ? null
+                                      : () async {
+                                          final confirmed = await showDialog<
+                                                  bool>(
+                                              context: context,
+                                              builder: (dialogContext) =>
+                                                  AlertDialog(
+                                                      title: Text(l10n
+                                                          .clearNotifications),
+                                                      content: Text(l10n
+                                                          .clearNotificationsText),
+                                                      actions: [
+                                                        TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.pop(
+                                                                    dialogContext,
+                                                                    false),
+                                                            child: Text(
+                                                                l10n.cancel)),
+                                                        FilledButton(
+                                                            onPressed: () =>
+                                                                Navigator.pop(
+                                                                    dialogContext,
+                                                                    true),
+                                                            child: Text(
+                                                                l10n.confirm)),
+                                                      ]));
+                                          if (confirmed == true &&
+                                              context.mounted) {
+                                            bloc.add(
+                                                ClearAllNotificationsEvent());
+                                          }
+                                        },
+                                )))),
+                  if (bloc.notificationDatas.isEmpty && bloc.isLoading)
+                    SliverPadding(
+                        padding: const EdgeInsets.all(20),
+                        sliver: SliverToBoxAdapter(
+                            child: NotificationShimmer(
+                                size: MediaQuery.sizeOf(context)))),
+                  if (bloc.notificationDatas.isEmpty && !bloc.isLoading)
+                    SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: NotificationEmptyContent(
+                            label: l10n.noNotification)),
+                  SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: SliverList.builder(
+                          itemCount: bloc.notificationDatas.length,
+                          itemBuilder: (context, index) => Padding(
+                              padding: const EdgeInsets.only(bottom: 14),
+                              child: NotificationCardWidget(
+                                  cont: context,
+                                  notificationData:
+                                      bloc.notificationDatas[index])))),
+                  if (hasMore && bloc.notificationDatas.isNotEmpty)
+                    SliverToBoxAdapter(
                         child: Padding(
-                          padding:
-                          EdgeInsets.symmetric(vertical: size.width * 0.02),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              InkWell(
-                                onTap: () {
-                                  if (context
-                                      .read<AccBloc>()
-                                      .notificationPaginations!
-                                      .pagination
-                                      .currentPage <
-                                      context
-                                          .read<AccBloc>()
-                                          .notificationPaginations!
-                                          .pagination
-                                          .totalPages) {
-                                    context.read<AccBloc>().add(
-                                        NotificationGetEvent(
-                                            pageNumber: context
-                                                .read<AccBloc>()
-                                                .notificationPaginations!
-                                                .pagination
-                                                .currentPage +
-                                                1));
-                                  }
-                                },
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: size.width * 0.04,
-                                      vertical: size.width * 0.025),
-                                  decoration: BoxDecoration(
-                                      color: AppColors.primary,
-                                      borderRadius:
-                                      BorderRadius.circular(50)),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      MyText(
-                                        text: AppLocalizations.of(context)!
-                                            .loadMore,
-                                        textStyle: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium!
-                                            .copyWith(
-                                          color: AppColors.white,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      const Icon(
-                                        Icons
-                                            .arrow_drop_down_circle_outlined,
-                                        color: AppColors.white,
-                                        size: 15,
-                                      )
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                            padding: const EdgeInsets.all(20),
+                            child: Center(
+                                child: bloc.isLoading
+                                    ? const SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppColors.meshwarRed))
+                                    : OutlinedButton.icon(
+                                        onPressed: () => bloc.add(
+                                            NotificationGetEvent(
+                                                pageNumber:
+                                                    pagination.currentPage +
+                                                        1)),
+                                        icon: const Icon(
+                                            Icons.expand_more_rounded),
+                                        label: Text(l10n.loadMore))))),
+                  SliverToBoxAdapter(
+                      child: SizedBox(
+                          height: MediaQuery.paddingOf(context).bottom + 12)),
+                ]),
               ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
+            );
+          }),
+        ),
+      );
 }

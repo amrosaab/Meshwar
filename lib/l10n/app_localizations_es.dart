@@ -1872,4 +1872,37 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get documents => 'Documentos';
+
+  @override
+  String get rideCall => 'Llamar';
+
+  @override
+  String get noDriversNearbyTitle => 'No hay conductores cerca';
+
+  @override
+  String get noDriversNearbyBody =>
+      'No pudimos encontrar un conductor para este viaje en este momento.';
+
+  @override
+  String get noDriversNearbyHint =>
+      'Inténtalo de nuevo en unos momentos o cambia el punto de recogida.';
+
+  @override
+  String get backToRide => 'Volver al viaje';
+
+  @override
+  String get cancelRideConfirmationTitle => '¿Cancelar este viaje?';
+
+  @override
+  String get cancelRideSearchBody =>
+      'Puedes seguir buscando o cancelar esta solicitud.';
+
+  @override
+  String get keepSearching => 'Seguir buscando';
+
+  @override
+  String get profilePhoto => 'Foto de perfil';
+
+  @override
+  String get changeProfilePhoto => 'Cambiar foto';
 }

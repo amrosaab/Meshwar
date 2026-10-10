@@ -22,11 +22,11 @@ class LoaderPage extends StatefulWidget {
 }
 
 class _LoaderPageState extends State<LoaderPage> {
-  // Navigation waits for both of these — whichever finishes last decides
-  // when we actually move on. _loaderSuccessState is captured once the
-  // bloc reports success; navigation only fires once the GIF has also
-  // finished its one playthrough.
-  bool _gifPlaybackComplete = false;
+  // The splash GIF (and the wait for it to finish playing) has been
+  // disabled — the app now moves on as soon as LoaderSuccessState arrives,
+  // right after the native splash hands off, instead of holding on this
+  // screen for a full GIF playthrough. See _PlayOnceGif below (now unused)
+  // to restore it.
   LoaderSuccessState? _loaderSuccessState;
   bool _navigated = false;
 
@@ -38,7 +38,7 @@ class _LoaderPageState extends State<LoaderPage> {
     Future.delayed(const Duration(seconds: 8), () {
       if (_navigated) return;
       debugPrint(
-          '[LoaderPage] 8s safety timeout reached — gifComplete=$_gifPlaybackComplete, '
+          '[LoaderPage] 8s safety timeout reached — '
               'loaderSuccessState=${_loaderSuccessState != null}. Forcing navigation check.');
       if (_loaderSuccessState == null) {
         debugPrint(
@@ -47,18 +47,8 @@ class _LoaderPageState extends State<LoaderPage> {
     });
   }
 
-  void _onGifComplete() {
-    debugPrint('[LoaderPage] GIF playback complete.');
-    _gifPlaybackComplete = true;
-    _maybeNavigate();
-  }
-
   void _maybeNavigate() {
     if (_navigated) return;
-    if (!_gifPlaybackComplete) {
-      debugPrint('[LoaderPage] _maybeNavigate: waiting on GIF playback.');
-      return;
-    }
     final state = _loaderSuccessState;
     if (state == null) {
       debugPrint(
@@ -131,7 +121,6 @@ class _LoaderPageState extends State<LoaderPage> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
     return BlocProvider(
       create: (context) => LoaderBloc()..add(LoaderGetLocalDataEvent()),
       child: BlocListener<LoaderBloc, LoaderState>(
@@ -144,22 +133,14 @@ class _LoaderPageState extends State<LoaderPage> {
         },
         child: PopScope(
           canPop: false,
+          // Same brand-red background as the native splash (see
+          // flutter_native_splash config in pubspec.yaml) and nothing else —
+          // this frame is only visible for however long LoaderSuccessState
+          // takes to arrive, so it should look like a continuation of the
+          // native splash, not a distinct screen.
           child: Scaffold(
             backgroundColor: Theme.of(context).primaryColor,
             resizeToAvoidBottomInset: false,
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _PlayOnceGif(
-                    assetPath: AppImages.splash,
-                    width: size.width * 0.8,
-                    height: size.height * 0.8,
-                    onComplete: _onGifComplete,
-                  ),
-                ],
-              ),
-            ),
           ),
         ),
       ),

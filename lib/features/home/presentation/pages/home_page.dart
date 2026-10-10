@@ -45,6 +45,17 @@ class _HomePageState extends State<HomePage>
   int _bottomNavIndex = 0;
   late HomeBloc _homeBloc;
 
+  // The other 3 bottom-nav tabs each create their own bloc and fire their own
+  // network calls (wallet history, card list, trip history, ...) as soon as
+  // they're built. Building all 4 inside the IndexedStack up front — which is
+  // what makes IndexedStack able to preserve each tab's scroll position/state
+  // — meant that storm fired the instant Home first rendered, competing with
+  // Home's own cold-start requests and visibly janking the just-loaded Home
+  // screen. Building a tab's real widget only after it's first visited keeps
+  // the state-preservation behaviour for tabs the user actually opens, without
+  // paying for the ones they don't.
+  final Set<int> _visitedTabs = {0};
+
   @override
   void initState() {
     super.initState();
@@ -102,7 +113,7 @@ class _HomePageState extends State<HomePage>
             Navigator.pushNamedAndRemoveUntil(
               context,
               DriverProfilePage.routeName,
-                  (route) => false,
+              (route) => false,
               arguments: const DriverProfilePageArguments(from: 'onboarding'),
             );
           }
@@ -149,7 +160,7 @@ class _HomePageState extends State<HomePage>
                   mapType: homeBloc.mapType,
                   selectedServiceIndex: homeBloc.selectedServiceIndex,
                 )).then(
-                  (value) {
+              (value) {
                 if (!context.mounted) return;
                 homeBloc.add(GetUserDetailsEvent());
               },
@@ -163,7 +174,7 @@ class _HomePageState extends State<HomePage>
             Navigator.pushNamedAndRemoveUntil(
               context,
               BookingPage.routeName,
-                  (route) => false,
+              (route) => false,
               arguments: BookingPageArguments(
                 picklat: state.tripData.pickLat,
                 picklng: state.tripData.pickLng,
@@ -179,8 +190,8 @@ class _HomePageState extends State<HomePage>
                 duration: state.tripData.totalTime.toString(),
                 isRentalRide: state.tripData.isRental,
                 isWithoutDestinationRide: ((state.tripData.dropLat.isEmpty &&
-                    state.tripData.dropLng.isEmpty) &&
-                    !state.tripData.isRental)
+                            state.tripData.dropLng.isEmpty) &&
+                        !state.tripData.isRental)
                     ? true
                     : false,
                 isOutstationRide: state.tripData.isOutStation == "1",
@@ -328,7 +339,7 @@ class _HomePageState extends State<HomePage>
                   selectedServiceIndex: homeBloc.selectedServiceIndex,
                 ),
               ).then(
-                    (value) {
+                (value) {
                   if (!context.mounted) return;
                   homeBloc.stopAddressList.clear();
                 },
@@ -390,7 +401,7 @@ class _HomePageState extends State<HomePage>
                   selectedServiceIndex: homeBloc.selectedServiceIndex,
                 ),
               ).then(
-                    (value) {
+                (value) {
                   if (!context.mounted) return;
                   homeBloc.stopAddressList.clear();
                 },
@@ -409,7 +420,7 @@ class _HomePageState extends State<HomePage>
                   transportType: homeBloc.transportType,
                   selectedServiceIndex: homeBloc.selectedServiceIndex,
                 )).then(
-                  (value) {
+              (value) {
                 if (!context.mounted) return;
                 if (value != null) {
                   if (homeBloc.nearByVechileSubscription != null) {
@@ -467,7 +478,7 @@ class _HomePageState extends State<HomePage>
                   transportType: homeBloc.transportType,
                   selectedServiceIndex: homeBloc.selectedServiceIndex,
                 )).then(
-                  (value) {
+              (value) {
                 if (!context.mounted) return;
                 if (value != null) {
                   if (homeBloc.nearByVechileSubscription != null) {
@@ -552,7 +563,7 @@ class _HomePageState extends State<HomePage>
             Navigator.pushNamedAndRemoveUntil(
               context,
               InvoicePage.routeName,
-                  (route) => false,
+              (route) => false,
               arguments: InvoicePageArguments(
                   requestData: state.requestData,
                   requestBillData: state.requestBillData,
@@ -576,7 +587,8 @@ class _HomePageState extends State<HomePage>
                         decoration: BoxDecoration(
                           color: AppColors.surfaceStrong(context),
                           borderRadius: BorderRadius.circular(22),
-                          border: Border.all(color: AppColors.surfaceBorder(context)),
+                          border: Border.all(
+                              color: AppColors.surfaceBorder(context)),
                           boxShadow: [
                             BoxShadow(
                               color: AppColors.meshwarRed.withOpacity(0.15),
@@ -618,7 +630,9 @@ class _HomePageState extends State<HomePage>
                               textStyle: Theme.of(context)
                                   .textTheme
                                   .bodyMedium!
-                                  .copyWith(color: Theme.of(context).primaryColorDark),
+                                  .copyWith(
+                                      color:
+                                          Theme.of(context).primaryColorDark),
                             ),
                             const SizedBox(height: 18),
                             CustomButton(
@@ -639,6 +653,7 @@ class _HomePageState extends State<HomePage>
           } else if (state is ChangeBottomNavIndexState) {
             setState(() {
               _bottomNavIndex = state.index;
+              _visitedTabs.add(state.index);
             });
             if (state.pushTripSummary &&
                 state.historyData != null &&
@@ -650,9 +665,9 @@ class _HomePageState extends State<HomePage>
                   historyData: state.historyData!,
                   historyIndex: state.historyIndex!,
                   isSupportTicketEnabled: context
-                      .read<HomeBloc>()
-                      .userData
-                      ?.enableSupportTicketFeature ??
+                          .read<HomeBloc>()
+                          .userData
+                          ?.enableSupportTicketFeature ??
                       '0',
                   pageNumber: 1,
                 ),
@@ -709,45 +724,56 @@ class _HomePageState extends State<HomePage>
                         backgroundColor: Colors.transparent,
                         extendBody: true,
                         body: (homeBloc.userData != null &&
-                            ((homeBloc.userData!.onTripRequest == null ||
-                                homeBloc.userData!.onTripRequest ==
-                                    "") ||
-                                (homeBloc.userData!.metaRequest == null ||
-                                    homeBloc.userData!.metaRequest == "")))
+                                ((homeBloc.userData!.onTripRequest == null ||
+                                        homeBloc.userData!.onTripRequest ==
+                                            "") ||
+                                    (homeBloc.userData!.metaRequest == null ||
+                                        homeBloc.userData!.metaRequest == "")))
                             ? IndexedStack(
-                          index: _bottomNavIndex,
-                          children: [
-                            HomeBodyMainWidget(home: homeBloc),
-                            HistoryPage(
-                              arg: HistoryPageArguments(
-                                isSupportTicketEnabled: homeBloc
-                                    .userData!.enableSupportTicketFeature,
-                                userData: homeBloc.userData!,
-                              ),
-                            ),
-                            WalletHistoryPage(
-                              arg: WalletPageArguments(
-                                  userData: homeBloc.userData!),
-                            ),
-                            AccountPage(
-                              arg: AccountPageArguments(
-                                  userData: homeBloc.userData!,
-                                  selectedServiceIndex:
-                                  homeBloc.selectedServiceIndex),
-                            ),
-                          ],
-                        )
+                                index: _bottomNavIndex,
+                                children: [
+                                  HomeBodyMainWidget(home: homeBloc),
+                                  if (_visitedTabs.contains(1))
+                                    HistoryPage(
+                                      arg: HistoryPageArguments(
+                                        isSupportTicketEnabled: homeBloc
+                                            .userData!
+                                            .enableSupportTicketFeature,
+                                        userData: homeBloc.userData!,
+                                      ),
+                                    )
+                                  else
+                                    const SizedBox.shrink(),
+                                  if (_visitedTabs.contains(2))
+                                    WalletHistoryPage(
+                                      arg: WalletPageArguments(
+                                          userData: homeBloc.userData!),
+                                    )
+                                  else
+                                    const SizedBox.shrink(),
+                                  if (_visitedTabs.contains(3))
+                                    AccountPage(
+                                      arg: AccountPageArguments(
+                                          userData: homeBloc.userData!,
+                                          selectedServiceIndex:
+                                              homeBloc.selectedServiceIndex),
+                                    )
+                                  else
+                                    const SizedBox.shrink(),
+                                ],
+                              )
                             : HomePageShimmer(size: size),
                         bottomNavigationBar: homeBloc.userData != null
                             ? BottomNavigationbarWidget(
-                          index: _bottomNavIndex,
-                          userData: homeBloc.userData!,
-                          onTap: (index) {
-                            setState(() {
-                              _bottomNavIndex = index;
-                            });
-                          },
-                        )
+                                index: _bottomNavIndex,
+                                userData: homeBloc.userData!,
+                                onTap: (index) {
+                                  setState(() {
+                                    _bottomNavIndex = index;
+                                    _visitedTabs.add(index);
+                                  });
+                                },
+                              )
                             : const SizedBox.shrink()),
                   ),
                 ),

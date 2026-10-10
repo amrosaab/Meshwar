@@ -601,6 +601,15 @@
     "view_document": "Shiko dokumentin",
     "uploaded_approved": "Ngarkuar dhe miratuar",
     "document": "Dokument",
-    "documents": "Dokumente"
-
+    "documents": "Dokumente",
+  "rideCall": "Telefono",
+  "noDriversNearbyTitle": "Nuk ka shoferë pranë",
+  "noDriversNearbyBody": "Nuk gjetëm një shofer për këtë udhëtim tani.",
+  "noDriversNearbyHint": "Provoni përsëri pas pak ose ndryshoni vendin e marrjes.",
+  "backToRide": "Kthehu te udhëtimi",
+  "cancelRideConfirmationTitle": "Ta anuloni këtë udhëtim?",
+  "cancelRideSearchBody": "Mund të vazhdoni kërkimin ose ta anuloni këtë kërkesë.",
+  "keepSearching": "Vazhdo kërkimin",
+    "profilePhoto": "Foto e profilit",
+    "changeProfilePhoto": "Ndrysho foton"
 }

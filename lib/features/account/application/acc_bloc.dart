@@ -173,6 +173,11 @@ class AccBloc extends Bloc<AccEvent, AccState> {
   bool isTicketSheetOpened = false;
   bool showRefresh = false;
   bool showReferralHistory = false;
+  bool isReferralHistoryLoading = false;
+  bool isReferralContentLoading = false;
+  bool hasLoadedReferralHistory = false;
+  bool isPromoChanging = false;
+  bool isPromoListLoading = false;
   bool isGettingUserDetails = false;
 
   UserDetail? userData;
@@ -185,6 +190,9 @@ class AccBloc extends Bloc<AccEvent, AccState> {
   HistoryPagination? historyPaginations;
   NotificationPagination? notificationPaginations;
 
+  bool isFaqLoading = false;
+  bool isHtmlLoading = false;
+  bool hasHtmlLoadFailed = false;
   int choosenFaqIndex = 0;
   int choosenMapIndex = 0;
   int selectedHistoryType = 0;
@@ -218,8 +226,12 @@ class AccBloc extends Bloc<AccEvent, AccState> {
   static List<HistoryData> _cachedCompletedHistory = [];
   static List<HistoryData> _cachedUpcomingHistory = [];
   static List<HistoryData> _cachedCancelledHistory = [];
+  static List<HistoryData> _cachedOutstationHistory = [];
+  bool _isOutstationHistory = false;
   static DateTime? _historyRateLimitedUntil;
-  static DateTime? _lastHistoryRequestAt;
+  static final Map<String, DateTime> _historyRequestTimes = {};
+  static final Map<String, HistoryPagination> _historyPaginationCache = {};
+  final Set<String> _historyRequestsInFlight = {};
   static const Duration _historyMinRequestGap = Duration(seconds: 4);
   static const Duration _historyRetryDelay = Duration(seconds: 15);
 
@@ -471,29 +483,35 @@ class AccBloc extends Bloc<AccEvent, AccState> {
   // Get Notifications
   Future<void> _getNotificationList(
       NotificationGetEvent event, Emitter<AccState> emit) async {
+    if (isLoading) return;
+    final page = event.pageNumber ?? 1;
     isLoading = true;
-    emit(UpdateState());
     emit(AccDataLoadingStartState());
     try {
       final data = await serviceLocator<AccUsecase>()
-          .notificationDetails(pageNo: event.pageNumber.toString());
-      data.fold(
-            (error) {
-          isLoading = false;
-          emit(UpdateState());
-          emit(NotificationFailure(errorMessage: error.message ?? ""));
-        },
-            (success) {
-          isLoading = false;
-          emit(UpdateState());
-          for (var i = 0; i < success.data.length; i++) {
-            notificationDatas.add(success.data[i]);
+          .notificationDetails(pageNo: page.toString());
+      if (isClosed) return;
+      isLoading = false;
+      loadMore = false;
+      data.fold((error) {
+        emit(NotificationFailure(errorMessage: error.message ?? ''));
+      }, (success) {
+        if (page == 1) notificationDatas.clear();
+        for (final notification in success.data) {
+          final index = notificationDatas.indexWhere((item) => item.id == notification.id);
+          if (index < 0) {
+            notificationDatas.add(notification);
+          } else {
+            notificationDatas[index] = notification;
           }
-          notificationPaginations = success.meta;
-          emit(NotificationSuccess(notificationDatas: notificationDatas));
-        },
-      );
+        }
+        notificationPaginations = success.meta;
+        emit(NotificationSuccess(notificationDatas: notificationDatas));
+      });
     } catch (e) {
+      if (isClosed) return;
+      isLoading = false;
+      loadMore = false;
       emit(NotificationFailure(errorMessage: e.toString()));
     }
   }
@@ -501,40 +519,28 @@ class AccBloc extends Bloc<AccEvent, AccState> {
 //ook
   Future<void> historyInitEvent(
       HistoryPageInitEvent event, Emitter<AccState> emit) async {
-    firstLoad = true;
-    isLoading = true;
+    _isOutstationHistory = false;
+    selectedHistoryType = 0;
+    _restoreHistoryFromCache(emit,
+        loading: !_historyPaginationCache.containsKey('is_completed=1'));
     add(HistoryGetEvent(historyFilter: 'is_completed=1'));
+    scrollController.removeListener(historyPageScrollListener);
     scrollController.addListener(historyPageScrollListener);
-    emit(UpdateState());
   }
 
-  historyPageScrollListener() {
-    if (scrollController.position.pixels ==
-        scrollController.position.maxScrollExtent &&
-        !isLoading &&
-        !loadMore) {
-      if (historyPaginations != null &&
-          historyPaginations!.pagination != null &&
-          historyPaginations!.pagination.currentPage <
-              historyPaginations!.pagination.totalPages) {
-        loadMore = true;
-        add(AccUpdateEvent());
-        add(HistoryGetEvent(
-            pageNumber: historyPaginations!.pagination.currentPage + 1,
-            historyFilter: (selectedHistoryType == 0)
-                ? "is_completed=1"
-                : (selectedHistoryType == 1)
-                ? "is_later=1"
-                : "is_cancelled=1"));
-        add(AccUpdateEvent());
-      } else {
-        if (historyPaginations!.pagination.currentPage ==
-            historyPaginations!.pagination.totalPages) {
-          loadMore = false;
-          add(AccUpdateEvent());
-        }
-      }
+  void historyPageScrollListener() {
+    if (!scrollController.hasClients || isLoading || loadMore) return;
+    final position = scrollController.position;
+    if (position.pixels < position.maxScrollExtent) return;
+    final pagination = historyPaginations?.pagination;
+    if (pagination == null || pagination.currentPage >= pagination.totalPages) {
+      return;
     }
+    loadMore = true;
+    add(AccUpdateEvent());
+    add(HistoryGetEvent(
+        pageNumber: pagination.currentPage + 1,
+        historyFilter: _selectedHistoryFilter));
   }
 
   bool _isTooManyAttempts(dynamic error) {
@@ -546,81 +552,92 @@ class AccBloc extends Bloc<AccEvent, AccState> {
   }
 
   // History
+  String get _selectedHistoryFilter => _isOutstationHistory
+      ? 'out_station=1' : selectedHistoryType == 0
+      ? 'is_completed=1'
+      : selectedHistoryType == 1 ? 'is_later=1' : 'is_cancelled=1';
+
+  List<HistoryData> _historyCacheFor(String filter) =>
+      filter == 'out_station=1' ? _cachedOutstationHistory
+      : filter.contains('is_completed=1') ? _cachedCompletedHistory
+      : filter.contains('is_later=1') ? _cachedUpcomingHistory
+      : _cachedCancelledHistory;
+
   Future<void> _getHistoryList(
       HistoryGetEvent event, Emitter<AccState> emit) async {
+    final filter = event.historyFilter;
+    if (filter == 'out_station=1') {
+      _isOutstationHistory = true;
+    }
+    final requestKey = '$filter:${event.pageNumber ?? 1}';
+    if (_historyRequestsInFlight.contains(requestKey)) return;
     final now = DateTime.now();
-
-    // Check static rate limit
     if (_historyRateLimitedUntil != null &&
         now.isBefore(_historyRateLimitedUntil!)) {
       _restoreHistoryFromCache(emit);
       emit(HistoryDataSuccessState());
       return;
     }
-
-    // Check minimum gap between requests
-    if (_lastHistoryRequestAt != null &&
-        now.difference(_lastHistoryRequestAt!) < _historyMinRequestGap &&
-        event.pageNumber == null) {
+    final lastRequest = _historyRequestTimes[filter];
+    if (lastRequest != null &&
+        now.difference(lastRequest) < _historyMinRequestGap &&
+        event.pageNumber == null && _historyPaginationCache.containsKey(filter)) {
       _restoreHistoryFromCache(emit);
       emit(HistoryDataSuccessState());
       return;
     }
 
-    _lastHistoryRequestAt = now;
-    emit(HistoryDataLoadingState());
-    isLoading = true;
-    if (event.pageNumber != null) {
-      loadMore = true;
-    } else {
-      firstLoad = true;
+    _historyRequestTimes[filter] = now;
+    _historyRequestsInFlight.add(requestKey);
+    if (filter == _selectedHistoryFilter) {
+      isLoading = true;
+      loadMore = event.pageNumber != null && event.pageNumber! > 1;
+      firstLoad = !_historyPaginationCache.containsKey(filter);
+      emit(UpdateState());
     }
-    emit(UpdateState());
-    final data = await serviceLocator<AccUsecase>().historyDetails(
-        event.historyFilter,
-        pageNo: event.pageNumber.toString());
-    data.fold(
-          (error) {
-        isLoading = false;
-        emit(UpdateState());
+    try {
+      final data = await serviceLocator<AccUsecase>().historyDetails(
+          filter, pageNo: event.pageNumber.toString());
+      data.fold((error) {
         debugPrint('History Error: ${error.toString()}');
         if (_isTooManyAttempts(error)) {
           _historyRateLimitedUntil = DateTime.now().add(_historyRetryDelay);
-          _restoreHistoryFromCache(emit);
-        } else {
-          emit(HistoryFailure(errorMessage: error.message ?? ""));
         }
+        if (filter != _selectedHistoryFilter) return;
+        _restoreHistoryFromCache(emit);
+        emit(HistoryFailure(errorMessage: error.message ?? ''));
         emit(HistoryDataSuccessState());
-      },
-          (success) {
+      }, (success) {
+        _historyRateLimitedUntil = null;
+        final cached = event.pageNumber == null || event.pageNumber == 1
+            ? success.data
+            : [..._historyCacheFor(filter), ...success.data].toSet().toList();
+        _updateHistoryCache(filter, cached);
+        _historyPaginationCache[filter] = success.meta;
+        // A slower request from another tab may update its cache, but must
+        // never replace the rides currently being viewed.
+        if (filter != _selectedHistoryFilter) return;
+        historyList = [...cached];
+        historyPaginations = success.meta;
         isLoading = false;
         loadMore = false;
         firstLoad = false;
-        _historyRateLimitedUntil = null;
-        emit(UpdateState());
-        if (event.pageNumber == null || event.pageNumber == 1) {
-          historyList = success.data;
-          _updateHistoryCache(event.historyFilter, historyList);
-        } else {
-          if (success.data.isNotEmpty) {
-            historyList.addAll(success.data);
-            List<HistoryData> historySetData = historyList.toSet().toList();
-            historyList = historySetData;
-            _updateHistoryCache(event.historyFilter, historyList);
-          }
-        }
-        historyPaginations = success.meta;
-        if (event.historyIndex != null) {
+        if (event.historyIndex != null &&
+            event.historyIndex! >= 0 && event.historyIndex! < historyList.length) {
           historyData = historyList[event.historyIndex!];
         }
         emit(HistorySuccess(history: historyList));
         emit(HistoryDataSuccessState());
-      },
-    );
+      });
+    } finally {
+      _historyRequestsInFlight.remove(requestKey);
+    }
   }
 
   void _updateHistoryCache(String filter, List<HistoryData> list) {
-    if (filter.contains('is_completed=1')) {
+    if (filter == 'out_station=1') {
+      _cachedOutstationHistory = List<HistoryData>.from(list);
+    } else if (filter.contains('is_completed=1')) {
       _cachedCompletedHistory = List<HistoryData>.from(list);
     } else if (filter.contains('is_later=1')) {
       _cachedUpcomingHistory = List<HistoryData>.from(list);
@@ -629,16 +646,12 @@ class AccBloc extends Bloc<AccEvent, AccState> {
     }
   }
 
-  void _restoreHistoryFromCache(Emitter<AccState> emit) {
-    if (selectedHistoryType == 0) {
-      historyList = List<HistoryData>.from(_cachedCompletedHistory);
-    } else if (selectedHistoryType == 1) {
-      historyList = List<HistoryData>.from(_cachedUpcomingHistory);
-    } else {
-      historyList = List<HistoryData>.from(_cachedCancelledHistory);
-    }
-    isLoading = false;
-    firstLoad = false;
+  void _restoreHistoryFromCache(Emitter<AccState> emit, {bool loading = false}) {
+    historyList = [..._historyCacheFor(_selectedHistoryFilter)];
+    historyPaginations = _historyPaginationCache[_selectedHistoryFilter];
+    isLoading = loading;
+    firstLoad = loading;
+    loadMore = false;
     emit(HistorySuccess(history: historyList));
   }
 
@@ -734,6 +747,7 @@ class AccBloc extends Bloc<AccEvent, AccState> {
   // Change History Type
   Future<void> _historyTypeChange(
       HistoryTypeChangeEvent event, Emitter<AccState> emit) async {
+    _isOutstationHistory = false;
     selectedHistoryType = event.historyTypeIndex;
     String filter;
     switch (selectedHistoryType) {
@@ -749,7 +763,8 @@ class AccBloc extends Bloc<AccEvent, AccState> {
       default:
         filter = '';
     }
-    emit(UpdateState());
+    _restoreHistoryFromCache(emit,
+        loading: !_historyPaginationCache.containsKey(filter));
     add(HistoryGetEvent(historyFilter: filter));
   }
 
@@ -971,24 +986,32 @@ class AccBloc extends Bloc<AccEvent, AccState> {
   }
 
 //Faq
-  FutureOr<void> _getFaqList(
+  Future<void> _getFaqList(
       GetFaqListEvent event, Emitter<AccState> emit) async {
+    if (isFaqLoading) return;
+    isFaqLoading = true;
     emit(FaqLoadingState());
-    final data = await serviceLocator<AccUsecase>().getFaqDetail();
-    data.fold(
-          (error) {
+    try {
+      final data = await serviceLocator<AccUsecase>().getFaqDetail();
+      if (isClosed) return;
+      isFaqLoading = false;
+      data.fold((error) {
         emit(FaqFailureState());
-      },
-          (success) {
+      }, (success) {
         faqDataList = success.data;
         emit(FaqSuccessState());
-      },
-    );
+      });
+    } catch (_) {
+      if (isClosed) return;
+      isFaqLoading = false;
+      emit(FaqFailureState());
+    }
   }
 
   Future<void> _selectedFaqIndex(
       FaqOnTapEvent event, Emitter<AccState> emit) async {
-    choosenFaqIndex = event.selectedFaqIndex;
+    choosenFaqIndex = choosenFaqIndex == event.selectedFaqIndex
+        ? -1 : event.selectedFaqIndex;
     emit(FaqSelectState(choosenFaqIndex));
   }
 
@@ -1055,6 +1078,7 @@ class AccBloc extends Bloc<AccEvent, AccState> {
 
   FutureOr<void> _getWalletHistoryList(
       GetWalletHistoryListEvent event, Emitter<AccState> emit) async {
+    isLoading = true;
     if (firstLoad) {
       emit(WalletHistoryLoadingState());
     }
@@ -1063,6 +1087,7 @@ class AccBloc extends Bloc<AccEvent, AccState> {
     data.fold(
           (error) {
         isLoading = false;
+        loadMore = false;
         firstLoad = false;
         emit(UpdateState());
         emit(WalletHistoryFailureState());
@@ -1103,30 +1128,19 @@ class AccBloc extends Bloc<AccEvent, AccState> {
     transferPhonenumber.clear();
     transferAmount.clear();
     add(GetWalletHistoryListEvent(pageIndex: 1));
+    scrollController.removeListener(walletPageScrollListener);
     scrollController.addListener(walletPageScrollListener);
     emit(UpdateState());
   }
 
-  walletPageScrollListener() {
-    if (scrollController.position.pixels ==
-        scrollController.position.maxScrollExtent &&
-        !isLoading &&
-        !loadMore) {
-      if (walletPaginations != null &&
-          walletPaginations!.pagination.currentPage <
-              walletPaginations!.pagination.totalPages) {
-        loadMore = true;
-        add(AccUpdateEvent());
-        add(GetWalletHistoryListEvent(
-            pageIndex: walletPaginations!.pagination.currentPage + 1));
-      } else {
-        if (walletPaginations!.pagination.currentPage ==
-            walletPaginations!.pagination.totalPages) {
-          loadMore = false;
-          add(AccUpdateEvent());
-        }
-      }
-    }
+  void walletPageScrollListener() {
+    if (!scrollController.hasClients || isLoading || loadMore) return;
+    final pagination = walletPaginations?.pagination;
+    if (pagination == null || pagination.currentPage >= pagination.totalPages) return;
+    if (scrollController.position.pixels < scrollController.position.maxScrollExtent) return;
+    loadMore = true;
+    add(AccUpdateEvent());
+    add(GetWalletHistoryListEvent(pageIndex: pagination.currentPage + 1));
   }
 
   Future<void> _onTransferMoneySelected(
@@ -1208,36 +1222,48 @@ class AccBloc extends Bloc<AccEvent, AccState> {
   // Delete sos
   Future<void> _deletesos(
       DeleteContactEvent event, Emitter<AccState> emit) async {
-    final data = await serviceLocator<AccUsecase>().deleteSosContact(event.id!);
-    data.fold(
-          (error) {
-        debugPrint(error.toString());
+    if (isLoading) return;
+    isLoading = true;
+    emit(SosLoadingState());
+    try {
+      final data = await serviceLocator<AccUsecase>().deleteSosContact(event.id!);
+      if (isClosed) return;
+      isLoading = false;
+      data.fold((error) {
         emit(SosFailureState());
-      },
-          (success) {
+      }, (success) {
+        sosdata.removeWhere((contact) => contact.id == event.id);
         add(AccGetUserDetailsEvent());
         emit(SosDeletedSuccessState());
-      },
-    );
+      });
+    } catch (_) {
+      if (isClosed) return;
+      isLoading = false;
+      emit(SosFailureState());
+    }
   }
 
-  FutureOr<void> addContactDetails(
+  Future<void> addContactDetails(
       AddContactEvent event, Emitter<AccState> emit) async {
-    emit(UserProfileDetailsLoadingState());
+    if (isLoading) return;
     isLoading = true;
-    final data = await serviceLocator<AccUsecase>()
-        .addSosContact(name: event.name, number: event.number);
-    data.fold(
-          (error) {
-        debugPrint(error.toString());
+    emit(UserProfileDetailsLoadingState());
+    try {
+      final data = await serviceLocator<AccUsecase>()
+          .addSosContact(name: event.name, number: event.number);
+      if (isClosed) return;
+      isLoading = false;
+      data.fold((error) {
         emit(AddContactFailureState());
-      },
-          (success) {
-        isLoading = false;
+      }, (success) {
         add(AccGetUserDetailsEvent());
         emit(AddContactSuccessState());
-      },
-    );
+      });
+    } catch (_) {
+      if (isClosed) return;
+      isLoading = false;
+      emit(AddContactFailureState());
+    }
   }
 
   Future<void> selectContactDetails(
@@ -1548,7 +1574,6 @@ class AccBloc extends Bloc<AccEvent, AccState> {
         }
       }
     }
-    await Future.delayed(const Duration(seconds: 1));
     isFavLoading = false;
     emit(FavoriteLoadedState());
   }
@@ -2081,16 +2106,16 @@ class AccBloc extends Bloc<AccEvent, AccState> {
     }
     try {
       final result = await FilePicker.pickFiles(
-        allowMultiple: true,
+
         type: FileType.custom,
         allowedExtensions: ['jpg', 'pdf', 'doc', 'jpeg', 'png'],
-      );
+      );//
       if (result != null) {
         final allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'doc'];
 
-        final selectedFiles = result.paths
+        final selectedFiles = result
             .where((path) => path != null)
-            .map((path) => File(path!))
+            .map((path) => File(path?.path??''))
             .toList();
 
         final validFiles = <File>[];
@@ -2163,57 +2188,82 @@ class AccBloc extends Bloc<AccEvent, AccState> {
     );
   }
 
-  FutureOr<void> getHtmlString(
+  Future<void> getHtmlString(
       GetHtmlStringEvent event, Emitter<AccState> emit) async {
+    if (isHtmlLoading) return;
+    isHtmlLoading = true;
+    hasHtmlLoadFailed = false;
     emit(AccDataLoadingStartState());
-    final data = await serviceLocator<AccUsecase>()
-        .getTermsAndPrivacyHtml(isPrivacyPage: event.isPrivacy);
-    data.fold(
-          (error) {
-        debugPrint(error.toString());
-        emit(AccDataLoadingStopState());
-      },
-          (success) {
-        if (success["success"]) {
-          htmlString = success["data"];
+    try {
+      final data = await serviceLocator<AccUsecase>()
+          .getTermsAndPrivacyHtml(isPrivacyPage: event.isPrivacy);
+      if (isClosed) return;
+      isHtmlLoading = false;
+      data.fold((error) {
+        hasHtmlLoadFailed = true;
+      }, (success) {
+        if (success is Map && success['success'] == true && success['data'] is String) {
+          htmlString = success['data'] as String;
+        } else {
+          hasHtmlLoadFailed = true;
         }
-        emit(AccDataLoadingStopState());
-      },
-    );
+      });
+      emit(AccDataLoadingStopState());
+    } catch (_) {
+      if (isClosed) return;
+      isHtmlLoading = false;
+      hasHtmlLoadFailed = true;
+      emit(AccDataLoadingStopState());
+    }
   }
 
-  FutureOr _referalHistory(
+  Future<void> _referalHistory(
       ReferalHistoryEvent event, Emitter<AccState> emit) async {
+    if (isReferralHistoryLoading) return;
+    isReferralHistoryLoading = true;
     emit(ReferalHistoryLoadingState());
-    final data = await serviceLocator<AccUsecase>().referalHistory();
-    data.fold(
-          (error) {
+    try {
+      final data = await serviceLocator<AccUsecase>().referalHistory();
+      if (isClosed) return;
+      isReferralHistoryLoading = false;
+      data.fold((error) {
         emit(ReferalHistoryFailureState());
-      },
-          (success) async {
+      }, (success) {
         if (success is historyModel.ReferralResponse) {
           referralHistory = success.data;
+          hasLoadedReferralHistory = true;
         }
         emit(ReferalHistorySuccessState());
-      },
-    );
+      });
+    } catch (_) {
+      if (isClosed) return;
+      isReferralHistoryLoading = false;
+      emit(ReferalHistoryFailureState());
+    }
   }
 
-  FutureOr _referralResponse(
+  Future<void> _referralResponse(
       ReferralResponseEvent event, Emitter<AccState> emit) async {
+    if (isReferralContentLoading) return;
+    isReferralContentLoading = true;
     emit(ReferralResponseLoadingState());
-    final data = await serviceLocator<AccUsecase>().referalResponse();
-    data.fold(
-          (error) {
+    try {
+      final data = await serviceLocator<AccUsecase>().referalResponse();
+      if (isClosed) return;
+      isReferralContentLoading = false;
+      data.fold((error) {
         emit(ReferralResponseFailureState());
-      },
-          (success) async {
+      }, (success) {
         if (success is referralModel.ReferralResponseData) {
           referralResponse = success;
         }
         emit(ReferralResponseSuccessState());
-      },
-    );
+      });
+    } catch (_) {
+      if (isClosed) return;
+      isReferralContentLoading = false;
+      emit(ReferralResponseFailureState());
+    }
   }
 
   FutureOr<void> downloadInvoiceUser(
@@ -2308,25 +2358,25 @@ class AccBloc extends Bloc<AccEvent, AccState> {
 
   Future<void> getPromoCodeList(
       GetPromoCodeListEvent event, Emitter<AccState> emit) async {
+    if (isPromoListLoading) return;
+    isPromoListLoading = true;
     isLoading = true;
-    emit(UpdateState());
     emit(AccDataLoadingStartState());
     try {
       final data = await serviceLocator<AccUsecase>().getPromoCodeList();
-      data.fold(
-            (error) {
-          isLoading = false;
-          emit(UpdateState());
-          emit(PromoCodeListFailureState());
-        },
-            (success) {
-          isLoading = false;
-          emit(UpdateState());
-          promoCodeDataList = success.data;
-          emit(PromoCodeListSuccessState());
-        },
-      );
-    } catch (e) {
+      if (isClosed) return;
+      isLoading = false;
+      isPromoListLoading = false;
+      data.fold((error) {
+        emit(PromoCodeListFailureState());
+      }, (success) {
+        promoCodeDataList = success.data;
+        emit(PromoCodeListSuccessState());
+      });
+    } catch (_) {
+      if (isClosed) return;
+      isLoading = false;
+      isPromoListLoading = false;
       emit(PromoCodeListFailureState());
     }
   }
@@ -2342,34 +2392,42 @@ class AccBloc extends Bloc<AccEvent, AccState> {
 
   Future<void> selectedPromoCodeListApply(
       SelectPromoCodeListApplyEvent event, Emitter<AccState> emit) async {
-    final data = await serviceLocator<AccUsecase>()
-        .promoCodeRedeem(code: event.selectedPromoCode);
-    data.fold(
-          (error) {
+    if (isPromoChanging) return;
+    isPromoChanging = true;
+    selectedPromoCodeValue = event.selectedPromoCode;
+    emit(PromoApplyLoadingState());
+    try {
+      final data = await serviceLocator<AccUsecase>()
+          .promoCodeRedeem(code: event.selectedPromoCode);
+      if (isClosed) return;
+      isPromoChanging = false;
+      data.fold((error) {
         emit(PromoApplyFailureState());
-        debugPrint('Update Failure');
-      },
-          (success) {
-        debugPrint('Update Success');
-        selectedPromoCodeValue = event.selectedPromoCode;
+      }, (success) {
         selectedPromoPrice = event.price!;
         emit(PromoApplySuccessState());
-      },
-    );
+      });
+    } catch (_) {
+      if (isClosed) return;
+      isPromoChanging = false;
+      emit(PromoApplyFailureState());
+    }
   }
 
   Future<void> promoCodeClear(
       PromoCodeClearEvent event, Emitter<AccState> emit) async {
+    if (isPromoChanging) return;
+    isPromoChanging = true;
     isLoading = true;
-    final data = await serviceLocator<AccUsecase>().promoCodeClear();
-    data.fold(
-          (error) {
-        isLoading = false;
-        debugPrint('Logout error: ${error.toString()}');
+    emit(PromoClearLoadingState());
+    try {
+      final data = await serviceLocator<AccUsecase>().promoCodeClear();
+      if (isClosed) return;
+      isPromoChanging = false;
+      isLoading = false;
+      data.fold((error) {
         emit(PromoClearFailureState(errorMessage: error.toString()));
-      },
-          (success) {
-        isLoading = false;
+      }, (success) {
         if (event.from == '2') {
           add(GetPromoCodeListEvent());
         } else {
@@ -2378,7 +2436,12 @@ class AccBloc extends Bloc<AccEvent, AccState> {
               selectedPromoCodeVale: selectedPromoCodeValue));
         }
         emit(PromoClearSuccessState());
-      },
-    );
+      });
+    } catch (error) {
+      if (isClosed) return;
+      isPromoChanging = false;
+      isLoading = false;
+      emit(PromoClearFailureState(errorMessage: error.toString()));
+    }
   }
 }

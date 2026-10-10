@@ -1,19 +1,16 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../../common/app_arguments.dart';
 import '../../../../../../common/app_colors.dart';
-import '../../../../../../core/utils/custom_appbar.dart';
-import '../../../../../../common/liquid_glass_container.dart';
-import '../../../../../../core/utils/custom_text.dart';
+import '../../../../../../common/ride_visuals.dart';
+import '../../../widgets/account_content.dart';
 import '../../../../../../l10n/app_localizations.dart';
 import '../../../../../home/domain/models/stop_address_model.dart';
 import '../../../../../home/presentation/pages/confirm_location_page.dart';
 import '../../../../application/acc_bloc.dart';
 import '../widget/delete_address_widget.dart';
-import '../widget/favourites_shimmer_loading.dart';
+import '../widget/favorite_location_card.dart';
 import 'confirm_fav_location.dart';
 
 class FavoriteLocationPage extends StatelessWidget {
@@ -24,7 +21,6 @@ class FavoriteLocationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
     return BlocProvider(
       create: (context) => AccBloc()
         ..add(GetFavListEvent(
@@ -40,11 +36,12 @@ class FavoriteLocationPage extends StatelessWidget {
                   userData: arg.userData,
                   isOutstationRide: false,
                   isPickupEdit: false,
-                  mapType: context.read<AccBloc>().userData!.mapType,
+                  mapType: (context.read<AccBloc>().userData ?? arg.userData)
+                      .mapType,
                   transportType: '',
                   selectedServiceIndex: arg.selectedServiceIndex,
                 )).then(
-                  (value) {
+              (value) {
                 if (!context.mounted) return;
                 if (value != null) {
                   final address = value as AddressModel;
@@ -64,7 +61,7 @@ class FavoriteLocationPage extends StatelessWidget {
                             selectedAddress: address,
                             selectedServiceIndex: arg.selectedServiceIndex,
                           )).then(
-                            (value) {
+                        (value) {
                           if (!context.mounted) return;
                           context.read<AccBloc>().add(AccGetUserDetailsEvent());
                         },
@@ -77,561 +74,124 @@ class FavoriteLocationPage extends StatelessWidget {
           }
         },
         child: BlocBuilder<AccBloc, AccState>(builder: (context, state) {
+          final bloc = context.read<AccBloc>();
+          final l10n = AppLocalizations.of(context)!;
+          void remove(String id, {bool home = false, bool work = false}) {
+            showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: AppColors.surfaceStrong(context),
+                shape: const RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(28))),
+                builder: (_) => DeleteAddressWidget(
+                    cont: context,
+                    addressId: id,
+                    isHome: home,
+                    isWork: work,
+                    isOthers: !home && !work));
+          }
+
           return Scaffold(
-            appBar: CustomAppBar(
-              title: AppLocalizations.of(context)!.favoriteLocation,
-              automaticallyImplyLeading: true,
-              titleFontSize: 18,
-              textColor: Theme.of(context).primaryColorDark,
+            backgroundColor: RideVisuals.canvas(context),
+            appBar: AppBar(
+              backgroundColor: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.bgAsphaltLight
+                  : Colors.white,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              centerTitle: false,
+              toolbarHeight:
+                  MediaQuery.textScalerOf(context).scale(22) > 32 ? 96 : 64,
+              foregroundColor: AccountStyle.ink(context),
+              title: Text(l10n.favoriteLocation,
+                  maxLines: 2,
+                  style: AccountStyle.text(context)
+                      .copyWith(fontSize: 22, fontWeight: FontWeight.w700)),
             ),
-            body: SafeArea(
-              top: false,
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (context.read<AccBloc>().isFavLoading)
-                            ListView.builder(
-                              itemCount: 6,
-                              shrinkWrap: true,
-                              physics: const ClampingScrollPhysics(),
-                              itemBuilder: (context, index) {
-                                return FavouriteShimmerLoading(size: size);
-                              },
-                            ),
-                          if (!context.read<AccBloc>().isFavLoading) ...[
-                            // Home Address Card
-                            (context.read<AccBloc>().home.isNotEmpty)
-                                ? LiquidGlassContainer(
-                              borderRadius: 12,
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .primaryColor
-                                          .withOpacity(0.1),
-                                      borderRadius:
-                                      BorderRadius.circular(10),
-                                    ),
-                                    child: Icon(
-                                      Icons.home_rounded,
-                                      color: Theme.of(context)
-                                          .primaryColor,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                        children: [
-                                          MyText(
-                                            text: AppLocalizations.of(
-                                                context)!
-                                                .home,
-                                            textStyle: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium!
-                                                .copyWith(
-                                                color: Theme.of(context)
-                                                    .primaryColorDark,
-                                                fontSize: 16,
-                                                fontWeight:
-                                                FontWeight.w600),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          MyText(
-                                            text: context
-                                                .read<AccBloc>()
-                                                .home[0]
-                                                .pickAddress,
-                                            textStyle: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall!
-                                                .copyWith(
-                                                color: AppColors
-                                                    .greyHintColor,
-                                                fontSize: 14),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      )),
-                                  const SizedBox(width: 8),
-                                  InkWell(
-                                    onTap: () {
-                                      showModalBottomSheet(
-                                          context: context,
-                                          isScrollControlled: true,
-                                          backgroundColor:
-                                          AppColors.surfaceStrong(
-                                              context),
-                                          builder: (_) {
-                                            return DeleteAddressWidget(
-                                                cont: context,
-                                                isHome: true,
-                                                isWork: false,
-                                                isOthers: false,
-                                                addressId: context
-                                                    .read<AccBloc>()
-                                                    .home[0]
-                                                    .id);
-                                          });
-                                    },
-                                    child: Container(
-                                        height: 36,
-                                        width: 36,
-                                        decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: AppColors.red
-                                                .withOpacity(0.1)),
-                                        alignment: Alignment.center,
-                                        child: const Icon(
-                                          Icons.delete_outline_rounded,
-                                          size: 20,
-                                          color: AppColors.red,
-                                        )),
-                                  ),
-                                ],
-                              ),
-                            )
-                                : InkWell(
-                              onTap: () {
-                                context.read<AccBloc>().add(
-                                    SelectFromFavAddressEvent(
-                                        addressType: 'Home'));
-                              },
-                              child: LiquidGlassContainer(
-                                borderRadius: 12,
-                                padding: const EdgeInsets.all(16),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.surfaceBorder(
-                                            context),
-                                        borderRadius:
-                                        BorderRadius.circular(10),
-                                      ),
-                                      child: Icon(
-                                        Icons.home_rounded,
-                                        color: Theme.of(context)
-                                            .hintColor,
-                                        size: 24,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                          children: [
-                                            MyText(
-                                              text: AppLocalizations.of(
-                                                  context)!
-                                                  .home,
-                                              textStyle: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium!
-                                                  .copyWith(
-                                                  color: Theme.of(
-                                                      context)
-                                                      .primaryColorDark,
-                                                  fontSize: 16,
-                                                  fontWeight:
-                                                  FontWeight.w600),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            MyText(
-                                              text: AppLocalizations.of(
-                                                  context)!
-                                                  .tapAddAddress,
-                                              textStyle: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall!
-                                                  .copyWith(
-                                                  color: AppColors
-                                                      .greyHintColor,
-                                                  fontSize: 14),
-                                            ),
-                                          ],
-                                        )),
-                                    Icon(
-                                      Icons.add_circle_outline_rounded,
-                                      color: Theme.of(context)
-                                          .primaryColor,
-                                      size: 24,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            // Work Address Card
-                            (context.read<AccBloc>().work.isNotEmpty)
-                                ? LiquidGlassContainer(
-                              borderRadius: 12,
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .primaryColor
-                                          .withOpacity(0.1),
-                                      borderRadius:
-                                      BorderRadius.circular(10),
-                                    ),
-                                    child: Icon(
-                                      Icons.work_rounded,
-                                      color: Theme.of(context)
-                                          .primaryColor,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                        children: [
-                                          MyText(
-                                            text: AppLocalizations.of(
-                                                context)!
-                                                .work,
-                                            textStyle: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium!
-                                                .copyWith(
-                                                color: Theme.of(context)
-                                                    .primaryColorDark,
-                                                fontSize: 16,
-                                                fontWeight:
-                                                FontWeight.w600),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          MyText(
-                                            text: context
-                                                .read<AccBloc>()
-                                                .work[0]
-                                                .pickAddress,
-                                            textStyle: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall!
-                                                .copyWith(
-                                                color: AppColors
-                                                    .greyHintColor,
-                                                fontSize: 14),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      )),
-                                  const SizedBox(width: 8),
-                                  InkWell(
-                                    onTap: () {
-                                      showModalBottomSheet(
-                                          context: context,
-                                          isScrollControlled: true,
-                                          backgroundColor:
-                                          AppColors.surfaceStrong(
-                                              context),
-                                          builder: (_) {
-                                            return DeleteAddressWidget(
-                                                cont: context,
-                                                isHome: false,
-                                                isWork: true,
-                                                isOthers: false,
-                                                addressId: context
-                                                    .read<AccBloc>()
-                                                    .work[0]
-                                                    .id);
-                                          });
-                                    },
-                                    child: Container(
-                                        height: 36,
-                                        width: 36,
-                                        decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: AppColors.red
-                                                .withOpacity(0.1)),
-                                        alignment: Alignment.center,
-                                        child: const Icon(
-                                          Icons.delete_outline_rounded,
-                                          size: 20,
-                                          color: AppColors.red,
-                                        )),
-                                  ),
-                                ],
-                              ),
-                            )
-                                : InkWell(
-                              onTap: () {
-                                context.read<AccBloc>().add(
-                                    SelectFromFavAddressEvent(
-                                        addressType: 'Work'));
-                              },
-                              child: LiquidGlassContainer(
-                                borderRadius: 12,
-                                padding: const EdgeInsets.all(16),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.surfaceBorder(
-                                            context),
-                                        borderRadius:
-                                        BorderRadius.circular(10),
-                                      ),
-                                      child: Icon(
-                                        Icons.work_rounded,
-                                        color: Theme.of(context)
-                                            .hintColor,
-                                        size: 24,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                          children: [
-                                            MyText(
-                                              text: AppLocalizations.of(
-                                                  context)!
-                                                  .work,
-                                              textStyle: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium!
-                                                  .copyWith(
-                                                  color: Theme.of(
-                                                      context)
-                                                      .primaryColorDark,
-                                                  fontSize: 16,
-                                                  fontWeight:
-                                                  FontWeight.w600),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            MyText(
-                                              text: AppLocalizations.of(
-                                                  context)!
-                                                  .tapAddAddress,
-                                              textStyle: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall!
-                                                  .copyWith(
-                                                  color: AppColors
-                                                      .greyHintColor,
-                                                  fontSize: 14),
-                                            ),
-                                          ],
-                                        )),
-                                    Icon(
-                                      Icons.add_circle_outline_rounded,
-                                      color: Theme.of(context)
-                                          .primaryColor,
-                                      size: 24,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            // Other Addresses List
-                            if (context.read<AccBloc>().others.isNotEmpty)
-                              ListView.builder(
-                                itemCount:
-                                context.read<AccBloc>().others.length,
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                padding: const EdgeInsets.only(bottom: 12),
-                                itemBuilder: (context, index) {
-                                  return Column(
-                                    children: [
-                                      LiquidGlassContainer(
-                                        borderRadius: 12,
-                                        padding: const EdgeInsets.all(16),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              padding:
-                                              const EdgeInsets.all(12),
-                                              decoration: BoxDecoration(
-                                                color: Theme.of(context)
-                                                    .primaryColor
-                                                    .withOpacity(0.1),
-                                                borderRadius:
-                                                BorderRadius.circular(10),
-                                              ),
-                                              child: Icon(
-                                                Icons.bookmark_rounded,
-                                                color: Theme.of(context)
-                                                    .primaryColor,
-                                                size: 24,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                                  children: [
-                                                    MyText(
-                                                      text: context
-                                                          .read<AccBloc>()
-                                                          .others[index]
-                                                          .addressName,
-                                                      textStyle: Theme.of(context)
-                                                          .textTheme
-                                                          .bodyMedium!
-                                                          .copyWith(
-                                                          color: Theme.of(
-                                                              context)
-                                                              .primaryColorDark,
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                          FontWeight
-                                                              .w600),
-                                                      maxLines: 1,
-                                                      overflow:
-                                                      TextOverflow.ellipsis,
-                                                    ),
-                                                    const SizedBox(height: 4),
-                                                    MyText(
-                                                      text: context
-                                                          .read<AccBloc>()
-                                                          .others[index]
-                                                          .pickAddress,
-                                                      textStyle: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall!
-                                                          .copyWith(
-                                                          color: AppColors
-                                                              .greyHintColor,
-                                                          fontSize: 14),
-                                                      maxLines: 2,
-                                                      overflow:
-                                                      TextOverflow.ellipsis,
-                                                    ),
-                                                  ],
-                                                )),
-                                            const SizedBox(width: 8),
-                                            InkWell(
-                                              onTap: () {
-                                                showModalBottomSheet(
-                                                    context: context,
-                                                    isScrollControlled: true,
-                                                    backgroundColor:
-                                                    AppColors
-                                                        .surfaceStrong(
-                                                        context),
-                                                    builder: (_) {
-                                                      return DeleteAddressWidget(
-                                                          cont: context,
-                                                          isHome: false,
-                                                          isWork: false,
-                                                          isOthers: true,
-                                                          addressId: context
-                                                              .read<AccBloc>()
-                                                              .others[index]
-                                                              .id);
-                                                    });
-                                              },
-                                              child: Container(
-                                                  height: 36,
-                                                  width: 36,
-                                                  decoration: BoxDecoration(
-                                                      shape: BoxShape.circle,
-                                                      color: AppColors.red
-                                                          .withOpacity(0.1)),
-                                                  alignment: Alignment.center,
-                                                  child: const Icon(
-                                                    Icons
-                                                        .delete_outline_rounded,
-                                                    size: 20,
-                                                    color: AppColors.red,
-                                                  )),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                    ],
-                                  );
-                                },
-                              ),
-                            // Add More Button
-                            if (context.read<AccBloc>().others.length < 2)
-                              InkWell(
-                                onTap: () async {
-                                  context
-                                      .read<AccBloc>()
-                                      .newAddressController
-                                      .text = '';
-                                  context.read<AccBloc>().add(
-                                      SelectFromFavAddressEvent(
-                                          addressType: context
-                                              .read<AccBloc>()
-                                              .newAddressController
-                                              .text));
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .primaryColor
-                                        .withOpacity(0.08),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Theme.of(context).primaryColor,
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.all(16),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.add_circle_outline_rounded,
-                                        size: 20,
-                                        color: Theme.of(context).primaryColor,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      MyText(
-                                        text: AppLocalizations.of(context)!
-                                            .addMore,
-                                        textStyle: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium!
-                                            .copyWith(
-                                          color: Theme.of(context)
-                                              .primaryColor,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            body: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: Text(l10n.favorites,
+                        style: AccountStyle.text(context).copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AccountStyle.muted(context)))),
+                FavoriteLocationCard(
+                    title: l10n.home,
+                    address: bloc.home.isEmpty
+                        ? l10n.tapAddAddress
+                        : bloc.home.first.pickAddress,
+                    icon: Icons.home_rounded,
+                    gradient: RideVisuals.blue,
+                    saved: bloc.home.isNotEmpty,
+                    actionLabel:
+                        bloc.home.isEmpty ? l10n.tapAddAddress : l10n.delete,
+                    onAction: () => bloc.home.isEmpty
+                        ? bloc
+                            .add(SelectFromFavAddressEvent(addressType: 'Home'))
+                        : remove(bloc.home.first.id, home: true)),
+                const SizedBox(height: 14),
+                FavoriteLocationCard(
+                    title: l10n.work,
+                    address: bloc.work.isEmpty
+                        ? l10n.tapAddAddress
+                        : bloc.work.first.pickAddress,
+                    icon: Icons.work_rounded,
+                    gradient: RideVisuals.amber,
+                    saved: bloc.work.isNotEmpty,
+                    actionLabel:
+                        bloc.work.isEmpty ? l10n.tapAddAddress : l10n.delete,
+                    onAction: () => bloc.work.isEmpty
+                        ? bloc
+                            .add(SelectFromFavAddressEvent(addressType: 'Work'))
+                        : remove(bloc.work.first.id, work: true)),
+                for (final place in bloc.others) ...[
+                  const SizedBox(height: 14),
+                  FavoriteLocationCard(
+                      title: place.addressName,
+                      address: place.pickAddress,
+                      icon: Icons.bookmark_rounded,
+                      gradient: RideVisuals.green,
+                      saved: true,
+                      actionLabel: l10n.delete,
+                      onAction: () => remove(place.id)),
+                ],
+              ],
             ),
+            bottomNavigationBar: bloc.others.length < 2
+                ? SafeArea(
+                    top: false,
+                    minimum: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                    child: FilledButton(
+                        style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.meshwarRed,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size.fromHeight(58),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 22, vertical: 16),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30))),
+                        onPressed: () {
+                          bloc.newAddressController.clear();
+                          bloc.add(SelectFromFavAddressEvent(addressType: ''));
+                        },
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const ExcludeSemantics(
+                                  child: Icon(Icons.add_rounded, size: 22)),
+                              const SizedBox(width: 10),
+                              Flexible(
+                                  child: Text(l10n.addMore,
+                                      style: AccountStyle.text(context)
+                                          .copyWith(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white))),
+                            ])))
+                : null,
           );
         }),
       ),

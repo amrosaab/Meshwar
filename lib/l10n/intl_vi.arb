@@ -599,6 +599,15 @@
     "view_document": "Xem tài liệu",
     "uploaded_approved": "Đã tải lên và được phê duyệt",
     "document": "Tài liệu",
-    "documents": "Tài liệu"
-
+    "documents": "Tài liệu",
+  "rideCall": "Gọi",
+  "noDriversNearbyTitle": "Không có tài xế gần đây",
+  "noDriversNearbyBody": "Hiện tại chúng tôi chưa tìm được tài xế cho chuyến đi này.",
+  "noDriversNearbyHint": "Hãy thử lại sau ít phút hoặc điều chỉnh điểm đón.",
+  "backToRide": "Quay lại chuyến đi",
+  "cancelRideConfirmationTitle": "Hủy chuyến đi này?",
+  "cancelRideSearchBody": "Bạn có thể tiếp tục tìm tài xế hoặc hủy yêu cầu này.",
+  "keepSearching": "Tiếp tục tìm kiếm",
+    "profilePhoto": "Ảnh đại diện",
+    "changeProfilePhoto": "Đổi ảnh"
 }

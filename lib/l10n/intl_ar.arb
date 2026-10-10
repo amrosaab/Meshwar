@@ -595,5 +595,15 @@
   "view_document": "عرض المستند",
   "uploaded_approved": "تم الرفع والموافقة عليه",
   "document": "مستند",
-  "documents": "المستندات"
+  "documents": "المستندات",
+  "rideCall": "اتصال",
+  "noDriversNearbyTitle": "لا يوجد سائقون بالقرب منك",
+  "noDriversNearbyBody": "لم نتمكن من العثور على سائق لهذه الرحلة حالياً.",
+  "noDriversNearbyHint": "جرّب مرة أخرى بعد قليل، أو عدّل موقع الانطلاق.",
+  "backToRide": "العودة إلى الرحلة",
+  "cancelRideConfirmationTitle": "هل تريد إلغاء هذه الرحلة؟",
+  "cancelRideSearchBody": "يمكنك مواصلة البحث عن سائق أو إلغاء هذا الطلب.",
+  "keepSearching": "مواصلة البحث",
+    "profilePhoto": "الصورة الشخصية",
+    "changeProfilePhoto": "تغيير الصورة"
 }

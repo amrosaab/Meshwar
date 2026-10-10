@@ -41,14 +41,18 @@ class _NavigationIconWidgetState extends State<NavigationIconWidget> {
       onTap: widget.onTap,
       onTapCancel: () {},
       onDoubleTap: () {},
-      borderRadius: BorderRadius.circular(20),
+      customBorder: const CircleBorder(),
       child: Container(
         height: widget.height ?? size.width * 0.1,
         width: widget.width ?? size.width * 0.1,
         decoration: BoxDecoration(
           color: AppColors.surface(context),
           border: Border.all(color: AppColors.surfaceBorder(context), width: 1),
-          borderRadius: BorderRadius.circular(20),
+          // A fixed borderRadius only rounds fully into a circle when the
+          // box is small enough — on wider screens (size.width * 0.1
+          // growing past ~40px) it clamped to a rounded square instead.
+          // shape: circle stays a true circle at any size.
+          shape: BoxShape.circle,
           boxShadow: (widget.isShadowWidget ?? false)
               ? [
             BoxShadow(

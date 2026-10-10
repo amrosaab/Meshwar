@@ -5,6 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:image_picker/image_picker.dart';
@@ -224,19 +225,51 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(SelectLoginMethodState());
   }
 
-  Future<void> verifyPhoneNumber(String phoneNumber, context) async {
+  // Returns whether a code was actually sent (codeSent fired) rather than
+  // just whether the initial request was accepted — the Future this method
+  // itself awaits from FirebaseAuth.verifyPhoneNumber resolves once the
+  // callbacks are registered, not once one of them actually fires, so the
+  // caller used to have no way to know if verification really succeeded.
+  Future<bool> verifyPhoneNumber(String phoneNumber, context) async {
     final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
+    final completer = Completer<bool>();
+    if (kDebugMode) {
+      debugPrint('Firebase OTP request: phoneNumber="$phoneNumber"');
+    }
     await firebaseAuth.verifyPhoneNumber(
       phoneNumber: phoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
         firebaseCredentials = credential;
+        if (!completer.isCompleted) completer.complete(true);
       },
       verificationFailed: (FirebaseAuthException e) {
+        // Every other FirebaseAuthException code (too-many-requests,
+        // quota-exceeded, app-not-authorized, captcha-check-failed,
+        // network-request-failed, web-context-cancelled, etc.) used to be
+        // swallowed here with no feedback at all — isLoading just flips back
+        // to false and the user sees nothing happen, no error, no OTP,
+        // indistinguishable from success until they notice no code arrives.
+        if (kDebugMode) {
+          debugPrint('verifyPhoneNumber failed: ${e.code} — ${e.message}');
+          debugPrint('Firebase phone auth: plugin=${e.plugin}, '
+              'project=${firebaseAuth.app.options.projectId}, '
+              'appId=${firebaseAuth.app.options.appId}');
+          if (e.stackTrace != null) {
+            debugPrintStack(stackTrace: e.stackTrace);
+          }
+          if (e.code == 'internal-error') {
+            debugPrint('Inspect the Xcode FirebaseAuth logs for the native '
+                'underlying error. Check Phone provider, SMS region policy, '
+                'billing, and iOS APNs/reCAPTCHA configuration.');
+          }
+        }
         if (e.code == 'invalid-phone-number') {
-          debugPrint('The provided phone number is not valid.');
           showToast(message: AppLocalizations.of(context)!.notValidPhoneNumber);
+        } else {
+          showToast(message: e.message ?? e.code);
         }
         isLoading = false;
+        if (!completer.isCompleted) completer.complete(false);
       },
       codeSent: (String verificationId, int? resendToken) async {
         firebaseVerificationId = verificationId;
@@ -246,9 +279,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             message: AppLocalizations.of(context)!
                 .otpSendTo
                 .replaceAll('***', phoneNumber));
+        if (!completer.isCompleted) completer.complete(true);
       },
       codeAutoRetrievalTimeout: (String verificationId) {},
     );
+    // Safety net: if none of the callbacks fire within a reasonable window
+    // (e.g. the request hangs), don't leave the caller waiting forever.
+    return completer.future.timeout(const Duration(seconds: 25),
+        onTimeout: () => false);
   }
 
   Future<void> _signInWithOTP(
@@ -261,18 +299,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     if (firebaseEnabled.value == true && !event.isLoginByEmail) {
       if (isFirebaseOtpVerifyEnable && !event.isLoginByEmail) {
-        await verifyPhoneNumber(
+        // Used to await verifyPhoneNumber, wait a flat 3 seconds, and then
+        // unconditionally emit success — so a verificationFailed callback
+        // (e.g. missing-client-identifier, web-user-interaction-failure)
+        // was silently overridden by a "success" state a few seconds later,
+        // while the 60s resend cooldown had already started regardless.
+        // Now waits for the actual outcome instead of assuming it.
+        final sent = await verifyPhoneNumber(
             '${event.dialCode}${event.mobileOrEmail}', event.context);
-        await Future.delayed(
-          const Duration(seconds: 3),
-              () {
-            isLoading = false;
-            emit(SignInWithOTPSuccessState());
-            if (event.isForgotPassword) {
-              emit(ForgotPasswordOTPSendState());
-            }
-          },
-        );
+        isLoading = false;
+        if (sent) {
+          emit(SignInWithOTPSuccessState());
+          if (event.isForgotPassword) {
+            emit(ForgotPasswordOTPSendState());
+          }
+        } else {
+          emit(SignInWithOTPFailureState());
+        }
       } else {
         if (!event.isLoginByEmail) {
           final data = await serviceLocator<AuthUsecase>().sendMobileOtp(

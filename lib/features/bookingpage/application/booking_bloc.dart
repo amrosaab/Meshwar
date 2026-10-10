@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
+import '../../../common/route_camera.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' hide PermissionStatus;
-import 'package:flutter_contacts/flutter_contacts.dart' as fc show PermissionStatus;
+import 'package:flutter_contacts/flutter_contacts.dart' as fc
+    show PermissionStatus;
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart' as intel;
 import 'package:flutter/services.dart';
@@ -42,6 +44,7 @@ import '../domain/models/promo_code_list_model.dart';
 import '../domain/models/rental_packages_model.dart';
 import '../presentation/page/booking/widget/marker_widget.dart';
 import '../../../common/vehicle_marker_helper.dart';
+import '../../../common/sedan_pose.dart';
 import 'usecases/booking_usecase.dart';
 import '../domain/repositories/booking_repo.dart';
 part 'booking_event.dart';
@@ -120,6 +123,17 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
   double maxChildHeight = 0.65;
   double scrollHeight = 0.0;
   double onRideBottomPosition = -250;
+  // Live bottom-sheet position, updated on every drag frame. Consumers that
+  // must follow the sheet (the floating map controls) listen to this instead
+  // of the sheet dispatching a bloc event per frame — which used to rebuild
+  // the whole booking screen, including the GoogleMap, and made dragging janky.
+  final ValueNotifier<double> sheetPositionNotifier = ValueNotifier(-250);
+
+  void updateSheetPosition(double value) {
+    onRideBottomPosition = value;
+    sheetPositionNotifier.value = value;
+  }
+
   double onRideBottomCurrentHeight = 0;
   double addTip = 0;
   String? selectedPackageId;
@@ -203,6 +217,12 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
   // emitting a BookingState, so only the map widget rebuilds instead of
   // the whole booking screen. See updateMarkers().
   final ValueNotifier<int> markerNotifier = ValueNotifier<int>(0);
+  final ValueNotifier<int> routeCameraRequest = ValueNotifier<int>(0);
+
+  void requestRouteOverview() {
+    if (!isClosed) routeCameraRequest.value++;
+  }
+
   LatLng? driverPosition;
   Set<Polyline> polylines = {};
   List<LatLng> polylineLatLng = [];
@@ -219,7 +239,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
 
   double selectedEtaAmount = 0.0;
   TextEditingController filterCapacityController =
-  TextEditingController(text: '1');
+      TextEditingController(text: '1');
   int filterCapasity = 1;
   List filterCategory = [];
   List filterPermit = [];
@@ -236,7 +256,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
   List<int> tempSelectPreference = [];
   List<String> tempSelectPreferenceIcons = [];
   final DraggableScrollableController draggableController =
-  DraggableScrollableController();
+      DraggableScrollableController();
 
   bool enableOndemandRides = false;
   bool enableBiddingRides = false;
@@ -379,16 +399,19 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     emit(BookingLoadingStopState());
   }
 
+  bool _addInstructionVisible = true;
+
   void _onDragChange() {
-    final size = draggableController.size;
+    if (!draggableController.isAttached) return;
     final shouldToggleByType =
         transportType == 'taxi' || isOutstationRide || isRentalRide;
+    final visible = !(draggableController.size >= 0.9 && shouldToggleByType);
 
-    if (size >= 0.9 && shouldToggleByType) {
-      add(UpdateAddInstructionVisibilityEvent(false));
-    } else {
-      add(UpdateAddInstructionVisibilityEvent(true));
-    }
+    // The controller notifies on every drag frame — only dispatch (and rebuild
+    // the screen) when the visibility actually flips, not 60x/second.
+    if (visible == _addInstructionVisible) return;
+    _addInstructionVisible = visible;
+    add(UpdateAddInstructionVisibilityEvent(visible));
   }
 
   //GoogleMap Animation
@@ -434,7 +457,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     timerDuration = 0;
     normalRideTimer?.cancel();
     biddingRideSearchTimer?.cancel();
-    onRideBottomPosition = -250;
+    updateSheetPosition(-250);
     if (!isPop) {
       isPop = true;
       emit(BookingNavigatorPopState());
@@ -447,11 +470,11 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     mapType = event.arg.mapType;
     pickUpAddressList = event.arg.pickupAddressList;
     dropAddressList =
-    ((event.arg.isRentalRide != null && event.arg.isRentalRide!) ||
-        (event.arg.isWithoutDestinationRide != null &&
-            event.arg.isWithoutDestinationRide!))
-        ? []
-        : event.arg.stopAddressList;
+        ((event.arg.isRentalRide != null && event.arg.isRentalRide!) ||
+                (event.arg.isWithoutDestinationRide != null &&
+                    event.arg.isWithoutDestinationRide!))
+            ? []
+            : event.arg.stopAddressList;
     userData = event.arg.userData;
     transportType = event.arg.transportType;
     polyLine = event.arg.polyString;
@@ -460,8 +483,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     requestData = event.arg.userData.onTripRequest != ""
         ? event.arg.userData.onTripRequest.data
         : event.arg.userData.metaRequest != ""
-        ? event.arg.userData.metaRequest.data
-        : null;
+            ? event.arg.userData.metaRequest.data
+            : null;
 
     isMyself = event.arg.isMyself ?? true;
     isMyselfSelected = isMyself;
@@ -471,7 +494,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     await loadSavedContacts();
     if (!isMyself) {
       final index = savedContacts.indexWhere(
-            (c) => c.number == selectedContact.number,
+        (c) => c.number == selectedContact.number,
       );
       selectedSavedContactIndex = (index != -1) ? index : null;
     } else {
@@ -514,8 +537,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
                   event.arg.userData.userCanMakeARideAfterXMiniutes))));
       scheduleDateTime = DateTime.now()
           .add(Duration(
-          minutes:
-          int.parse(event.arg.userData.userCanMakeARideAfterXMiniutes)))
+              minutes:
+                  int.parse(event.arg.userData.userCanMakeARideAfterXMiniutes)))
           .toString();
     }
     if (event.arg.isRentalRide != null &&
@@ -544,10 +567,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       mapBound(double.parse(event.arg.picklat), double.parse(event.arg.picklng),
           double.parse(event.arg.picklat), double.parse(event.arg.picklng),
           isRentalRide: true);
-      if (mapType == 'google_map') {
-        googleMapController
-            ?.animateCamera(CameraUpdate.newLatLngBounds(bound!, 100));
-      } else {
+      if (mapType != 'google_map') {
         if (fmController != null) {
           fmController!.move(
               fmlt.LatLng(
@@ -595,7 +615,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
               dropAddressList: dropAddressList,
               isOutstationRide: event.arg.isOutstationRide,
               isWithoutDestinationRide:
-              event.arg.isWithoutDestinationRide ?? false,
+                  event.arg.isWithoutDestinationRide ?? false,
               sharedRide: (event.arg.isSharedRide ?? false) ? 1 : null,
               seatsTaken: (event.arg.isSharedRide ?? false) ? 1 : null,
             ));
@@ -616,7 +636,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
               dropAddressList: [],
               isOutstationRide: event.arg.isOutstationRide,
               isWithoutDestinationRide:
-              event.arg.isWithoutDestinationRide ?? false,
+                  event.arg.isWithoutDestinationRide ?? false,
               sharedRide: (event.arg.isSharedRide ?? false) ? 1 : null,
               seatsTaken: (event.arg.isSharedRide ?? false) ? 1 : null,
             ));
@@ -638,8 +658,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
                   (userData!.onTripRequest != null &&
                       userData!.onTripRequest != ""))) {
             if (((event.arg.isWithoutDestinationRide != null &&
-                !event.arg.isWithoutDestinationRide!) ||
-                (event.arg.isWithoutDestinationRide == null)) &&
+                        !event.arg.isWithoutDestinationRide!) ||
+                    (event.arg.isWithoutDestinationRide == null)) &&
                 ((event.arg.isRentalRide != null && !event.arg.isRentalRide!) ||
                     event.arg.isRentalRide == null)) {
               await addDistanceMarker(
@@ -664,10 +684,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
               event.arg.stopAddressList.length > 1) {
             for (var i = 0; i < event.arg.stopAddressList.length; i++) {
               if (((event.arg.isWithoutDestinationRide != null &&
-                  !event.arg.isWithoutDestinationRide!) ||
-                  (event.arg.isWithoutDestinationRide == null)) &&
+                          !event.arg.isWithoutDestinationRide!) ||
+                      (event.arg.isWithoutDestinationRide == null)) &&
                   ((event.arg.isRentalRide != null &&
-                      !event.arg.isRentalRide!) ||
+                          !event.arg.isRentalRide!) ||
                       event.arg.isRentalRide == null)) {
                 await addDistanceMarker(
                     LatLng(double.parse(event.arg.droplat),
@@ -692,10 +712,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           } else {
             if (dropAddressList.isNotEmpty) {
               if (((event.arg.isWithoutDestinationRide != null &&
-                  !event.arg.isWithoutDestinationRide!) ||
-                  (event.arg.isWithoutDestinationRide == null)) &&
+                          !event.arg.isWithoutDestinationRide!) ||
+                      (event.arg.isWithoutDestinationRide == null)) &&
                   ((event.arg.isRentalRide != null &&
-                      !event.arg.isRentalRide!) ||
+                          !event.arg.isRentalRide!) ||
                       event.arg.isRentalRide == null)) {
                 await addDistanceMarker(
                     LatLng(double.parse(event.arg.droplat),
@@ -718,8 +738,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
             }
           }
           if ((event.arg.isRentalRide == null ||
-              (event.arg.isRentalRide != null &&
-                  !event.arg.isRentalRide!)) &&
+                  (event.arg.isRentalRide != null &&
+                      !event.arg.isRentalRide!)) &&
               (event.arg.isWithoutDestinationRide == null ||
                   (event.arg.isWithoutDestinationRide != null &&
                       !event.arg.isWithoutDestinationRide!))) {
@@ -750,7 +770,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
               // Initialize bidding flags based on current offer vs allowed range
               try {
                 final double baseline =
-                double.parse(requestData!.requestEtaAmount);
+                    double.parse(requestData!.requestEtaAmount);
                 final String lowPct = requestData!.biddingLowPercentage;
                 final double minAllowed = (lowPct == '0')
                     ? 0.0
@@ -767,10 +787,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
                 if (googleMapController != null) {
                   googleMapController!.animateCamera(
                       CameraUpdate.newCameraPosition(CameraPosition(
-                        target: LatLng(double.parse(event.arg.picklat),
-                            double.parse(event.arg.picklng)),
-                        zoom: 17.0,
-                      )));
+                    target: LatLng(double.parse(event.arg.picklat),
+                        double.parse(event.arg.picklng)),
+                    zoom: 17.0,
+                  )));
                 }
               } else {
                 if (fmController != null) {
@@ -788,10 +808,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
                 if (googleMapController != null) {
                   googleMapController!.animateCamera(
                       CameraUpdate.newCameraPosition(CameraPosition(
-                        target: LatLng(double.parse(event.arg.picklat),
-                            double.parse(event.arg.picklng)),
-                        zoom: 17.0,
-                      )));
+                    target: LatLng(double.parse(event.arg.picklat),
+                        double.parse(event.arg.picklng)),
+                    zoom: 17.0,
+                  )));
                 }
               } else {
                 if (fmController != null) {
@@ -848,7 +868,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     if (isRentalRide) {
       // Move the selected vehicle to the top of the list
       final selectedVehicle =
-      rentalEtaDetailsList.removeAt(selectedVehicleIndex);
+          rentalEtaDetailsList.removeAt(selectedVehicleIndex);
       rentalEtaDetailsList.insert(0, selectedVehicle);
       selectedVehicleIndex = 0;
       paymentList = rentalEtaDetailsList[0].paymentType.split(",");
@@ -857,12 +877,12 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           ? rentalEtaDetailsList[0].discountedTotel
           : rentalEtaDetailsList[0].fareAmount;
       rentalPreferenceDetailsList =
-      rentalEtaDetailsList[0].rentalPreferenceList!;
+          rentalEtaDetailsList[0].rentalPreferenceList!;
     } else {
       // // Move the selected vehicle to the top of the list
       if (isMultiTypeVechiles) {
         final selectedVehicle =
-        sortedEtaDetailsList.removeAt(selectedVehicleIndex);
+            sortedEtaDetailsList.removeAt(selectedVehicleIndex);
         sortedEtaDetailsList.insert(0, selectedVehicle);
       } else {
         final selectedVehicle = etaDetailsList.removeAt(selectedVehicleIndex);
@@ -871,13 +891,13 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       selectedVehicleIndex = 0;
 
       final currentEta =
-      isMultiTypeVechiles ? sortedEtaDetailsList[0] : etaDetailsList[0];
+          isMultiTypeVechiles ? sortedEtaDetailsList[0] : etaDetailsList[0];
 
       preferenceDetailsList = currentEta.preferenceList ?? [];
       paymentList = currentEta.paymentType.split(",");
       selectedPaymentType = paymentList.isNotEmpty ? paymentList.first : '';
       selectedEtaAmount =
-      currentEta.hasDiscount ? currentEta.discountTotal : currentEta.total;
+          currentEta.hasDiscount ? currentEta.discountTotal : currentEta.total;
     }
     if (!event.isOutstationRide) {
       scheduleDateTime = '';
@@ -907,8 +927,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
 
   void timerCount(BuildContext context,
       {required int duration,
-        bool? isCloseTimer,
-        required bool isNormalRide}) async {
+      bool? isCloseTimer,
+      required bool isNormalRide}) async {
     int count = duration;
 
     if (isCloseTimer == null && isNormalRide) {
@@ -1012,9 +1032,9 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
   }
 
   FutureOr<void> bookingEtaRequest(
-      BookingEtaRequestEvent event,
-      Emitter<BookingState> emit,
-      ) async {
+    BookingEtaRequestEvent event,
+    Emitter<BookingState> emit,
+  ) async {
     isEtaLoading = true;
     isEtaApiCompleted = false;
 
@@ -1042,7 +1062,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     );
 
     await data.fold(
-          (error) async {
+      (error) async {
         isEtaLoading = false;
         isEtaApiCompleted = true;
         if (emit.isDone) return;
@@ -1062,7 +1082,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           showToast(message: error.message.toString());
         }
       },
-          (success) async {
+      (success) async {
         isEtaLoading = false;
         isEtaApiCompleted = true;
         etaDetailsList.clear();
@@ -1124,24 +1144,24 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         savedCardList = success.savedCards ?? [];
 
         paymentList = (isMultiTypeVechiles
-            ? sortedEtaDetailsList[selectedVehicleIndex].paymentType
-            : etaDetailsList[selectedVehicleIndex].paymentType)
+                ? sortedEtaDetailsList[selectedVehicleIndex].paymentType
+                : etaDetailsList[selectedVehicleIndex].paymentType)
             .split(',');
 
         selectedPaymentType = paymentList.isNotEmpty ? paymentList.first : '';
 
         selectedEtaAmount = (isMultiTypeVechiles
-            ? sortedEtaDetailsList[selectedVehicleIndex]
-            : etaDetailsList[selectedVehicleIndex])
-            .hasDiscount
+                    ? sortedEtaDetailsList[selectedVehicleIndex]
+                    : etaDetailsList[selectedVehicleIndex])
+                .hasDiscount
             ? (isMultiTypeVechiles
-            ? sortedEtaDetailsList[selectedVehicleIndex]
-            : etaDetailsList[selectedVehicleIndex])
-            .discountTotal
+                    ? sortedEtaDetailsList[selectedVehicleIndex]
+                    : etaDetailsList[selectedVehicleIndex])
+                .discountTotal
             : (isMultiTypeVechiles
-            ? sortedEtaDetailsList[selectedVehicleIndex]
-            : etaDetailsList[selectedVehicleIndex])
-            .total;
+                    ? sortedEtaDetailsList[selectedVehicleIndex]
+                    : etaDetailsList[selectedVehicleIndex])
+                .total;
 
         if (event.promocode != null) {
           detailView = false;
@@ -1184,7 +1204,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     );
 
     data.fold(
-          (error) {
+      (error) {
         isEtaLoading = false;
         if (error.message == 'logout') {
           emit(LogoutState());
@@ -1195,7 +1215,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           showToast(message: '${error.message}');
         }
       },
-          (success) async {
+      (success) async {
         isEtaLoading = false;
         rentalPackagesList = success.data;
         savedCardList = success.savedCards;
@@ -1231,7 +1251,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
 
     selectedPackageId = rentalPackagesList[selectedPackageIndex].id.toString();
     rentalEtaDetailsList = (rentalPackagesList.isNotEmpty &&
-        rentalPackagesList[selectedPackageIndex].typesWithPrice != null)
+            rentalPackagesList[selectedPackageIndex].typesWithPrice != null)
         ? rentalPackagesList[selectedPackageIndex].typesWithPrice!.data
         : [];
     if (rentalEtaDetailsList.isNotEmpty) {
@@ -1300,12 +1320,12 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
             if (e['is_active'] == 1 &&
                 e['is_available'] == true &&
                 ((e['vehicle_types'] != null &&
-                    e['vehicle_types']
-                        .contains(nearByEtaVechileList[i].typeId)) ||
+                        e['vehicle_types']
+                            .contains(nearByEtaVechileList[i].typeId)) ||
                     (e['vehicle_type'] != null &&
                         e['vehicle_type'] == nearByEtaVechileList[i].typeId))) {
               DateTime dt =
-              DateTime.fromMillisecondsSinceEpoch(e['updated_at']);
+                  DateTime.fromMillisecondsSinceEpoch(e['updated_at']);
               if (DateTime.now().difference(dt).inMinutes <= 2) {
                 vehicles.add(e);
                 if (vehicles.isNotEmpty) {
@@ -1356,7 +1376,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         paidAt: event.paidAt,
         parcelType: event.parcelType,
         selectedPaymentType:
-        event.cardToken.isNotEmpty ? 'card' : event.selectedPaymentType,
+            event.cardToken.isNotEmpty ? 'card' : event.selectedPaymentType,
         cardToken: event.cardToken,
         scheduleDateTime: event.scheduleDateTime,
         isEtaRental: event.isRentalRide,
@@ -1366,10 +1386,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         offeredRideFare: "",
         polyLine: event.polyLine,
         isAirport: ((event.pickupAddressList.first.isAirportLocation != null &&
-            event.pickupAddressList.first.isAirportLocation!) ||
-            (event.dropAddressList.any((element) =>
-            (element.isAirportLocation != null &&
-                element.isAirportLocation!))))
+                    event.pickupAddressList.first.isAirportLocation!) ||
+                (event.dropAddressList.any((element) =>
+                    (element.isAirportLocation != null &&
+                        element.isAirportLocation!))))
             ? true
             : false,
         isParcel: (event.selectedTransportType == 'delivery') ? true : false,
@@ -1386,7 +1406,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         myself: event.myself,
         contactBookName: event.contactBookName);
     data.fold(
-          (error) {
+      (error) {
         isLoading = false;
         if (error.message == 'logout') {
           emit(LogoutState());
@@ -1395,12 +1415,12 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           emit(BookingCreateRequestFailureState());
         }
       },
-          (success) async {
+      (success) async {
         isLoading = false;
         isTripStart = true;
         nearByVechileSubscription?.cancel();
         etaDurationStream?.cancel();
-        onRideBottomPosition = -250;
+        updateSheetPosition(-250);
         if (success['success']) {
           animationController?.stop();
           animationController = null;
@@ -1413,10 +1433,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
               if (googleMapController != null) {
                 googleMapController!.animateCamera(
                     CameraUpdate.newCameraPosition(CameraPosition(
-                      target: LatLng(event.pickupAddressList.first.lat,
-                          event.pickupAddressList.first.lng),
-                      zoom: 15.5,
-                    )));
+                  target: LatLng(event.pickupAddressList.first.lat,
+                      event.pickupAddressList.first.lng),
+                  zoom: 15.5,
+                )));
               }
             } else {
               if (fmController != null) {
@@ -1448,21 +1468,21 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         timerCancel: event.timerCancel,
         customReason: event.customReason);
     data.fold(
-          (error) {
+      (error) {
         debugPrint(error.toString());
         emit(BookingLoadingStopState());
         if (error.message == 'logout') {
           emit(LogoutState());
         }
       },
-          (success) {
+      (success) {
         requestData = null;
         isTripStart = false;
         isNormalRideSearching = false;
         isBiddingRideSearching = false;
         isBiddingIncreaseLimitReach = false;
         isBiddingDecreaseLimitReach = false;
-        onRideBottomPosition = -250;
+        updateSheetPosition(-250);
         emit(BookingUpdateState());
         if (requestData != null) {
           if (requestData!.isBidRide == 1) {
@@ -1570,14 +1590,15 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           etaDurationStream?.cancel();
         }
         if ((requestData!.isTripStart != 1 ||
-            requestData!.isOutStation == '1') &&
+                requestData!.isOutStation == '1') &&
             (requestData!.arrivedAt != '') &&
             (requestData!.dropLat != '0' &&
                 requestData!.dropLng != '0' &&
                 !requestData!.isRental)) {
           final String iconType = driverData!.vehicleTypeIcon.toString();
           final double rotation = myBearings[driverData!.id.toString()] ?? 0.0;
-          final marker = VehicleMarkerHelper.getMarker(iconType, bearing: rotation);
+          final marker =
+              VehicleMarkerHelper.getMarker(iconType, bearing: rotation);
           if (requestData!.polyLine.isNotEmpty) {
             markerList.clear();
             markerList.add(Marker(
@@ -1595,7 +1616,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
             if (userData != null &&
                 requestData!.requestStops.data.isEmpty &&
                 ((userData!.metaRequest != null &&
-                    userData!.metaRequest != "") ||
+                        userData!.metaRequest != "") ||
                     (userData!.onTripRequest != null &&
                         userData!.onTripRequest != ""))) {
               markerList.add(Marker(
@@ -1655,8 +1676,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
               dropLat: double.parse(requestData!.dropLat),
               dropLng: double.parse(requestData!.dropLng),
               stops: (requestData != null &&
-                  requestData!.arrivedAt != "" &&
-                  dropAddressList.length > 1)
+                      requestData!.arrivedAt != "" &&
+                      dropAddressList.length > 1)
                   ? dropAddressList
                   : [],
               pickAddress: '',
@@ -1664,7 +1685,9 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
               icon: marker,
             ));
           }
-        } else {
+        } else if (polylist.length < 2) {
+          // Pickup-only fallback for rides without a route. Request refreshes
+          // must not replace a routed ride's overview with a fixed zoom of 17.
           if (mapType == 'google_map') {
             if (googleMapController != null) {
               googleMapController!
@@ -1918,14 +1941,18 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       debugPrint('Driver Stream');
       dynamic driver = jsonDecode(jsonEncode(event.snapshot.value));
       final String iconType = driver['vehicle_type_icon'].toString();
-      final double? incomingBearing = driver['bearing'] != null 
-          ? double.tryParse(driver['bearing'].toString()) 
-          : (driver['heading'] != null ? double.tryParse(driver['heading'].toString()) : null);
+      final double? incomingBearing = driver['heading'] != null
+          ? double.tryParse(driver['heading'].toString())
+          : (driver['bearing'] != null
+              ? double.tryParse(driver['bearing'].toString())
+              : null);
 
       if (incomingBearing != null) {
         myBearings[driver['id'].toString()] = incomingBearing;
       }
-      final marker = VehicleMarkerHelper.getMarker(iconType, bearing: incomingBearing ?? (myBearings[driver['id'].toString()] ?? 0.0));
+      final marker = VehicleMarkerHelper.getMarker(iconType,
+          bearing:
+              incomingBearing ?? (myBearings[driver['id'].toString()] ?? 0.0));
 
       if (vsync != null &&
           ((driverPosition != null &&
@@ -1938,7 +1965,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
             vsync: vsync, duration: const Duration(milliseconds: 1500));
         animateCar(
             (driverPosition ?? LatLng(driver["l"][0], driver["l"][1])).latitude,
-            (driverPosition ?? LatLng(driver["l"][0], driver["l"][1])).longitude,
+            (driverPosition ?? LatLng(driver["l"][0], driver["l"][1]))
+                .longitude,
             driver["l"][0],
             driver["l"][1],
             vsync,
@@ -1956,7 +1984,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
             markerId: MarkerId(
                 'marker#${driver['id']}#${driver['vehicle_type_icon']}'),
             position: LatLng(driver["l"][0], driver["l"][1]),
-            rotation: 0.0,
+            rotation: VehicleMarkerHelper.sourceRotation(iconType,
+                incomingBearing ?? (myBearings[driver['id'].toString()] ?? 0)),
             icon: marker,
           ));
         }
@@ -1985,23 +2014,23 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           await addDistanceMarker(
               (requestData != null && requestData!.arrivedAt == "")
                   ? LatLng(double.parse(requestData!.pickLat),
-                  double.parse(requestData!.pickLng))
+                      double.parse(requestData!.pickLng))
                   : LatLng(double.parse(requestData!.dropLat),
-                  double.parse(requestData!.dropLng)),
+                      double.parse(requestData!.dropLng)),
               double.tryParse(distance)!,
               time: double.parse(duration));
         } else {
           markerList.removeWhere(
-                  (element) => element.markerId == const MarkerId('distance'));
+              (element) => element.markerId == const MarkerId('distance'));
         }
         if (!requestData!.isRental) {
           markerList.add(Marker(
             markerId: const MarkerId("drop"),
             position: (requestData != null && requestData!.arrivedAt == "")
                 ? LatLng(double.parse(requestData!.pickLat),
-                double.parse(requestData!.pickLng))
+                    double.parse(requestData!.pickLng))
                 : LatLng(double.parse(requestData!.dropLat),
-                double.parse(requestData!.dropLng)),
+                    double.parse(requestData!.dropLng)),
             rotation: 0.0,
             icon: await MarkerWidget(
               isPickup: (requestData != null && requestData!.arrivedAt == "")
@@ -2036,9 +2065,9 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           polyLine = '';
           polylines.clear();
           markerList.removeWhere(
-                  (element) => element.markerId.value.contains('drop'));
+              (element) => element.markerId.value.contains('drop'));
           markerList.removeWhere(
-                  (element) => element.markerId == const MarkerId('distance'));
+              (element) => element.markerId == const MarkerId('distance'));
         }
       }
     });
@@ -2058,13 +2087,13 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         ratings: event.ratings,
         feedBack: event.feedBack);
     data.fold(
-          (error) {
+      (error) {
         debugPrint(error.toString());
         if (error.message == 'logout') {
           emit(LogoutState());
         }
       },
-          (success) {
+      (success) {
         emit(BookingUserRatingsSuccessState());
       },
     );
@@ -2075,13 +2104,13 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     if (goodsTypeList.isEmpty) {
       final data = await serviceLocator<BookingUsecase>().getGoodsTypes();
       data.fold(
-            (error) {
+        (error) {
           debugPrint(error.toString());
           if (error.message == 'logout') {
             emit(LogoutState());
           }
         },
-            (success) {
+        (success) {
           goodsTypeList = success.data;
           emit(SelectGoodsTypeState());
         },
@@ -2105,11 +2134,11 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
 
       final double totalValue = multi
           ? (isOutstationRide && isRoundTrip)
-          ? (sortedEtaDetailsList[selectedVehicleIndex].total * 2)
-          : sortedEtaDetailsList[selectedVehicleIndex].total
+              ? (sortedEtaDetailsList[selectedVehicleIndex].total * 2)
+              : sortedEtaDetailsList[selectedVehicleIndex].total
           : (isOutstationRide && isRoundTrip)
-          ? (etaDetailsList[selectedVehicleIndex].total * 2)
-          : etaDetailsList[selectedVehicleIndex].total;
+              ? (etaDetailsList[selectedVehicleIndex].total * 2)
+              : etaDetailsList[selectedVehicleIndex].total;
 
       // Prefill bid value if empty
       if (farePriceController.text.isEmpty) {
@@ -2152,11 +2181,11 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         : etaDetailsList[selectedVehicleIndex].basePrice;
     final double totalValue = isMultiTypeVechiles
         ? (event.isOutStation && isRoundTrip)
-        ? (sortedEtaDetailsList[selectedVehicleIndex].total * 2)
-        : sortedEtaDetailsList[selectedVehicleIndex].total
+            ? (sortedEtaDetailsList[selectedVehicleIndex].total * 2)
+            : sortedEtaDetailsList[selectedVehicleIndex].total
         : (event.isOutStation && isRoundTrip)
-        ? (etaDetailsList[selectedVehicleIndex].total * 2)
-        : etaDetailsList[selectedVehicleIndex].total;
+            ? (etaDetailsList[selectedVehicleIndex].total * 2)
+            : etaDetailsList[selectedVehicleIndex].total;
 
     if (farePriceController.text.isEmpty) {
       farePriceController.text = (requestData != null)
@@ -2167,21 +2196,21 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       if (event.isIncrease) {
         if (bidHighPercentage == "0" ||
             (double.parse(farePriceController.text.toString()) +
-                (double.parse(userData!.biddingAmountIncreaseOrDecrease
-                    .toString()))) <=
+                    (double.parse(userData!.biddingAmountIncreaseOrDecrease
+                        .toString()))) <=
                 (totalValue +
                     ((double.parse(bidHighPercentage) / 100) * totalValue))) {
           isBiddingIncreaseLimitReach = false;
           isBiddingDecreaseLimitReach = false;
           farePriceController.text = (farePriceController.text.isEmpty)
               ? (basePrice +
-              double.parse(
-                  userData!.biddingAmountIncreaseOrDecrease.toString()))
-              .toStringAsFixed(2)
+                      double.parse(
+                          userData!.biddingAmountIncreaseOrDecrease.toString()))
+                  .toStringAsFixed(2)
               : (double.parse(farePriceController.text.toString()) +
-              double.parse(
-                  userData!.biddingAmountIncreaseOrDecrease.toString()))
-              .toStringAsFixed(2);
+                      double.parse(
+                          userData!.biddingAmountIncreaseOrDecrease.toString()))
+                  .toStringAsFixed(2);
         } else {
           isBiddingIncreaseLimitReach = true;
           isBiddingDecreaseLimitReach = false;
@@ -2189,7 +2218,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         emit(BookingUpdateState());
       } else {
         final double step =
-        double.parse(userData!.biddingAmountIncreaseOrDecrease.toString());
+            double.parse(userData!.biddingAmountIncreaseOrDecrease.toString());
         final double currentPrice = farePriceController.text.isNotEmpty
             ? double.parse(farePriceController.text.toString())
             : totalValue;
@@ -2197,7 +2226,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         final double minAllowedPrice = bidLowPercentage == "0"
             ? 0.0
             : totalValue -
-            ((double.parse(bidLowPercentage) / 100) * totalValue);
+                ((double.parse(bidLowPercentage) / 100) * totalValue);
 
         // Only decrease if after decreasing we are still >= minAllowedPrice
         final double nextPrice = currentPrice - step;
@@ -2220,10 +2249,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     } else {
       if (event.isIncrease) {
         if ((requestData != null &&
-            requestData!.biddingHighPercentage == "0") ||
+                requestData!.biddingHighPercentage == "0") ||
             (double.parse(farePriceController.text.toString()) +
-                (double.parse(userData!.biddingAmountIncreaseOrDecrease
-                    .toString()))) <=
+                    (double.parse(userData!.biddingAmountIncreaseOrDecrease
+                        .toString()))) <=
                 (double.parse(requestData!.requestEtaAmount) +
                     ((double.parse(requestData!.biddingHighPercentage) / 100) *
                         double.parse(requestData!.requestEtaAmount)))) {
@@ -2231,16 +2260,16 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           isBiddingDecreaseLimitReach = false;
           farePriceController.text = (farePriceController.text.isEmpty)
               ? (double.parse(requestData!.offerredRideFare) +
-              double.parse(
-                  userData!.biddingAmountIncreaseOrDecrease.toString()))
-              .toStringAsFixed(2)
+                      double.parse(
+                          userData!.biddingAmountIncreaseOrDecrease.toString()))
+                  .toStringAsFixed(2)
               : (double.parse(farePriceController.text.toString()) +
-              double.parse(
-                  userData!.biddingAmountIncreaseOrDecrease.toString()))
-              .toStringAsFixed(2);
+                      double.parse(
+                          userData!.biddingAmountIncreaseOrDecrease.toString()))
+                  .toStringAsFixed(2);
           if (!((double.parse(farePriceController.text.toString()) +
-              (double.parse(
-                  userData!.biddingAmountIncreaseOrDecrease.toString()))) <=
+                  (double.parse(
+                      userData!.biddingAmountIncreaseOrDecrease.toString()))) <=
               (double.parse(requestData!.requestEtaAmount) +
                   ((double.parse(requestData!.biddingHighPercentage) / 100) *
                       double.parse(requestData!.requestEtaAmount))))) {
@@ -2255,7 +2284,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       } else {
         // Decrease branch for existing request (requestData != null)
         final double step =
-        double.parse(userData!.biddingAmountIncreaseOrDecrease.toString());
+            double.parse(userData!.biddingAmountIncreaseOrDecrease.toString());
         final double baseline = double.parse(requestData!.requestEtaAmount);
         final double currentPrice = farePriceController.text.isNotEmpty
             ? double.parse(farePriceController.text.toString())
@@ -2297,7 +2326,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         paidAt: event.paidAt,
         parcelType: event.parcelType,
         selectedPaymentType:
-        event.cardToken.isNotEmpty ? 'card' : event.selectedPaymentType,
+            event.cardToken.isNotEmpty ? 'card' : event.selectedPaymentType,
         cardToken: event.cardToken,
         scheduleDateTime: event.scheduleDateTime,
         isEtaRental: false,
@@ -2307,10 +2336,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         offeredRideFare: event.offeredRideFare,
         polyLine: event.polyLine,
         isAirport: ((event.pickupAddressList.first.isAirportLocation != null &&
-            event.pickupAddressList.first.isAirportLocation!) ||
-            (event.dropAddressList.any((element) =>
-            (element.isAirportLocation != null &&
-                element.isAirportLocation!))))
+                    event.pickupAddressList.first.isAirportLocation!) ||
+                (event.dropAddressList.any((element) =>
+                    (element.isAirportLocation != null &&
+                        element.isAirportLocation!))))
             ? true
             : false,
         isParcel: (event.selectedTransportType == 'delivery') ? true : false,
@@ -2324,7 +2353,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         myself: event.myself,
         contactBookName: event.contactBookName);
     data.fold(
-          (error) {
+      (error) {
         isLoading = false;
         if (error.message == 'logout') {
           emit(LogoutState());
@@ -2333,7 +2362,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           emit(BiddingCreateRequestFailureState());
         }
       },
-          (success) {
+      (success) {
         isLoading = false;
         requestData = OnTripRequestData.fromJson(success["data"]);
         isBiddingDecreaseLimitReach = false;
@@ -2361,7 +2390,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
                 ? jsonEncode(event.dropAddressList)
                 : 'null',
             'goods': (requestData!.transportType != 'taxi' &&
-                requestData!.goodsType != '-')
+                    requestData!.goodsType != '-')
                 ? '${requestData!.goodsType} - ${requestData!.goodsTypeQuantity}'
                 : 'null',
             'pick_lat': double.parse(requestData!.pickLat),
@@ -2372,20 +2401,20 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
             'is_out_station': event.isOutstationRide,
             'distance': event.isOutstationRide
                 ? userData!.distanceUnit == 'mi'
-                ? ((double.parse(requestData!.totalDistance) * 1.60934) *
-                1000)
-                .toString()
-                : (double.parse(requestData!.totalDistance) * 1000)
-                .toString()
+                    ? ((double.parse(requestData!.totalDistance) * 1.60934) *
+                            1000)
+                        .toString()
+                    : (double.parse(requestData!.totalDistance) * 1000)
+                        .toString()
                 : isMultiTypeVechiles
-                ? sortedEtaDetailsList[selectedVehicleIndex].distance
-                : etaDetailsList[selectedVehicleIndex].distance.toString(),
+                    ? sortedEtaDetailsList[selectedVehicleIndex].distance
+                    : etaDetailsList[selectedVehicleIndex].distance.toString(),
             'completed_ride_count': userData!.completedRideCount,
             'ratings': userData!.rating,
             'trip_type': event.isOutstationRide
                 ? event.isRoundTrip
-                ? 'Round Trip'
-                : 'One Way Trip'
+                    ? 'Round Trip'
+                    : 'One Way Trip'
                 : 'Bidding',
             'start_date': requestData!.tripStartTime,
             'return_date': requestData!.returnTime,
@@ -2409,15 +2438,15 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
               final bool multi = isMultiTypeVechiles;
               final String lowPct = multi
                   ? sortedEtaDetailsList[selectedVehicleIndex]
-                  .biddingLowPercentage
+                      .biddingLowPercentage
                   : etaDetailsList[selectedVehicleIndex].biddingLowPercentage;
               final double totalValue = multi
                   ? (isOutstationRide && isRoundTrip)
-                  ? (sortedEtaDetailsList[selectedVehicleIndex].total * 2)
-                  : sortedEtaDetailsList[selectedVehicleIndex].total
+                      ? (sortedEtaDetailsList[selectedVehicleIndex].total * 2)
+                      : sortedEtaDetailsList[selectedVehicleIndex].total
                   : (isOutstationRide && isRoundTrip)
-                  ? (etaDetailsList[selectedVehicleIndex].total * 2)
-                  : etaDetailsList[selectedVehicleIndex].total;
+                      ? (etaDetailsList[selectedVehicleIndex].total * 2)
+                      : etaDetailsList[selectedVehicleIndex].total;
               final double minAllowed = (lowPct == '0')
                   ? 0.0
                   : totalValue - ((double.parse(lowPct) / 100) * totalValue);
@@ -2433,10 +2462,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
               if (googleMapController != null) {
                 googleMapController!.animateCamera(
                     CameraUpdate.newCameraPosition(CameraPosition(
-                      target: LatLng(event.pickupAddressList.first.lat,
-                          event.pickupAddressList.first.lng),
-                      zoom: 17.0,
-                    )));
+                  target: LatLng(event.pickupAddressList.first.lat,
+                      event.pickupAddressList.first.lng),
+                  zoom: 17.0,
+                )));
               }
             } else {
               if (fmController != null) {
@@ -2489,7 +2518,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         .handleError((onError) {
       biddingRequestStream?.cancel();
     }).listen(
-          (DatabaseEvent event) {
+      (DatabaseEvent event) {
         debugPrint("BIDDING STREAM");
         Map rideList = {};
         DataSnapshot snapshots = event.snapshot;
@@ -2508,7 +2537,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
                 }
                 biddingTimerEvent(
                     duration: int.parse(
-                        userData!.maximumTimeForFindDriversForBittingRide) +
+                            userData!.maximumTimeForFindDriversForBittingRide) +
                         5);
               });
             }
@@ -2542,13 +2571,13 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           requestId: (requestData != null)
               ? requestData!.id
               : (event.id != null)
-              ? event.id!
-              : '',
+                  ? event.id!
+                  : '',
           driverId: event.driver['driver_id'].toString(),
           acceptRideFare: event.driver['price'].toString(),
           offeredRideFare: farePriceController.text);
       data.fold(
-            (error) {
+        (error) {
           isLoading = false;
           if (error.message == 'logout') {
             emit(LogoutState());
@@ -2557,7 +2586,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
             emit(BiddingCreateRequestFailureState());
           }
         },
-            (success) async {
+        (success) async {
           if (requestData != null) {
             await FirebaseDatabase.instance
                 .ref()
@@ -2565,7 +2594,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
                 .remove();
             driverStreamRide(driverId: event.driver["driver_id"]);
             biddingDriverList.removeWhere(
-                    (element) => element["driver_id"] == event.driver["driver_id"]);
+                (element) => element["driver_id"] == event.driver["driver_id"]);
             add(BookingGetUserDetailsEvent(requestId: requestData!.id));
           }
           add(UpdateEvent());
@@ -2575,11 +2604,11 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       await FirebaseDatabase.instance
           .ref()
           .child(
-          'bid-meta/${requestData!.id}/drivers/driver_${event.driver["driver_id"]}')
+              'bid-meta/${requestData!.id}/drivers/driver_${event.driver["driver_id"]}')
           .update({"is_rejected": 'by_user'});
       if (biddingDriverList.isNotEmpty) {
         biddingDriverList.removeWhere(
-                (element) => element["driver_id"] == event.driver["driver_id"]);
+            (element) => element["driver_id"] == event.driver["driver_id"]);
         emit(BookingUpdateState());
       }
       emit(BookingUpdateState());
@@ -2591,7 +2620,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     final data = await serviceLocator<BookingUsecase>().cancelReasons(
         beforeOrAfter: event.beforeOrAfter, requestId: requestData!.id);
     data.fold(
-          (error) {
+      (error) {
         if (error.message == 'logout') {
           emit(LogoutState());
         } else {
@@ -2599,7 +2628,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           emit(BookingUpdateState());
         }
       },
-          (success) {
+      (success) {
         cancelReasonsList = success.data;
         emit(CancelReasonState());
       },
@@ -2617,12 +2646,12 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       isOpenStreet: mapType == 'open_street_map',
     );
     data.fold(
-          (error) {
+      (error) {
         debugPrint(error.toString());
         showToast(message: error.message ?? '');
         emit(BookingUpdateState());
       },
-          (success) async {
+      (success) async {
         distance = success.distance;
         if (success.duration.contains('.')) {
           duration = double.parse(success.duration).toStringAsFixed(1);
@@ -2647,7 +2676,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
             dropAddressList: event.arg!.stopAddressList,
             isOutstationRide: event.arg!.isOutstationRide,
             isWithoutDestinationRide:
-            event.arg!.isWithoutDestinationRide ?? false,
+                event.arg!.isWithoutDestinationRide ?? false,
             sharedRide: (event.arg!.isSharedRide ?? false) ? 1 : null,
             seatsTaken: (event.arg!.isSharedRide ?? false) ? 1 : null,
           ));
@@ -2660,7 +2689,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         }
         if (event.arg != null &&
             ((event.arg!.isWithoutDestinationRide != null &&
-                !event.arg!.isWithoutDestinationRide!) ||
+                    !event.arg!.isWithoutDestinationRide!) ||
                 (event.arg!.isWithoutDestinationRide == null)) &&
             ((event.arg!.isRentalRide != null && !event.arg!.isRentalRide!) ||
                 event.arg!.isRentalRide == null)) {
@@ -2689,7 +2718,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
                     userData!.onTripRequest != ""))) {
           if (event.arg != null &&
               ((event.arg!.isWithoutDestinationRide != null &&
-                  !event.arg!.isWithoutDestinationRide!) ||
+                      !event.arg!.isWithoutDestinationRide!) ||
                   (event.arg!.isWithoutDestinationRide == null)) &&
               ((event.arg!.isRentalRide != null && !event.arg!.isRentalRide!) ||
                   event.arg!.isRentalRide == null)) {
@@ -2728,7 +2757,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         } else {
           if (event.arg != null &&
               ((event.arg!.isWithoutDestinationRide != null &&
-                  !event.arg!.isWithoutDestinationRide!) ||
+                      !event.arg!.isWithoutDestinationRide!) ||
                   (event.arg!.isWithoutDestinationRide == null)) &&
               ((event.arg!.isRentalRide != null && !event.arg!.isRentalRide!) ||
                   event.arg!.isRentalRide == null)) {
@@ -2765,30 +2794,20 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
   }
 
   mapBound(double pickLat, double pickLng, double dropLat, double dropLng,
-      {bool? isInitCall, bool? isRentalRide, List<LatLng>? polyPoints, List<LatLng>? extraPoints}) {
-    List<LatLng> allPoints = [];
-    if (polyPoints != null) allPoints.addAll(polyPoints);
-    if (extraPoints != null) allPoints.addAll(extraPoints);
-    if (pickLat != 0) allPoints.add(LatLng(pickLat, pickLng));
-    if (dropLat != 0) allPoints.add(LatLng(dropLat, dropLng));
-
-    if (allPoints.isNotEmpty) {
-      double minLat = allPoints.first.latitude;
-      double maxLat = allPoints.first.latitude;
-      double minLng = allPoints.first.longitude;
-      double maxLng = allPoints.first.longitude;
-
-      for (var point in allPoints) {
-        minLat = math.min(minLat, point.latitude);
-        maxLat = math.max(maxLat, point.latitude);
-        minLng = math.min(minLng, point.longitude);
-        maxLng = math.max(maxLng, point.longitude);
-      }
-      bound = LatLngBounds(
-        southwest: LatLng(minLat, minLng),
-        northeast: LatLng(maxLat, maxLng),
-      );
-    }
+      {bool? isInitCall,
+      bool? isRentalRide,
+      List<LatLng>? polyPoints,
+      List<LatLng>? extraPoints}) {
+    final points = <LatLng>[
+      if (polyPoints != null) ...polyPoints,
+      if (extraPoints != null) ...extraPoints,
+      LatLng(pickLat, pickLng),
+      LatLng(dropLat, dropLng),
+    ];
+    // Validate coordinates, not a country box: Kuwait and other supported
+    // regions must use their actual route bounds too.
+    final nextBounds = RouteCamera.boundsForPoints(points);
+    if (nextBounds != null) bound = nextBounds;
 
     if (!isClosed) {
       add(UpdateEvent());
@@ -2831,44 +2850,36 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       );
     }
 
-    polylines.add(
+    polylines.addAll({
+      // Soft wide casing — matches the ride-preview map's route styling.
       Polyline(
-          polylineId: const PolylineId('1'),
-          color: AppColors.blue,
+          polylineId: const PolylineId('onRideCasing'),
+          color: AppColors.meshwarRed.withValues(alpha: 0.18),
           visible: true,
-          width: 4,
+          width: 14,
           jointType: JointType.round,
           startCap: Cap.roundCap,
           endCap: Cap.roundCap,
+          zIndex: 0,
           points: polylist),
-    );
+      // Bold solid core.
+      Polyline(
+          polylineId: const PolylineId('1'),
+          color: AppColors.meshwarRed,
+          visible: true,
+          width: 7,
+          jointType: JointType.round,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          zIndex: 1,
+          points: polylist),
+    });
 
     // Update bounds to include the entire route for a "wide fit"
     mapBound(0, 0, 0, 0, polyPoints: polylist);
 
-    if (isDriverStream == null) {
-      if (mapType == 'google_map') {
-        // Use a slightly larger padding (120) to ensure points aren't right at the edge
-        try {
-          googleMapController
-              ?.animateCamera(CameraUpdate.newLatLngBounds(bound!, 120));
-        } catch (e) {
-          debugPrint("Error animating camera in decodeEncodedPolyline: $e");
-        }
-      } else {
-        if (fmController != null) {
-          fmController!.fitCamera(
-            fm.CameraFit.bounds(
-              bounds: fm.LatLngBounds(
-                fmlt.LatLng(bound!.southwest.latitude, bound!.southwest.longitude),
-                fmlt.LatLng(bound!.northeast.latitude, bound!.northeast.longitude),
-              ),
-              padding: const EdgeInsets.all(50),
-            ),
-          );
-        }
-      }
-    }
+    // The map widget owns fitting once route geometry and sheet layout are
+    // ready. A second fit here applied different padding and fought that fit.
     if (!isClosed) {
       add(UpdateEvent());
     }
@@ -2961,6 +2972,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     // Dispose the DraggableScrollableController when the bloc is closed
     _draggableScrollableController.dispose();
     markerNotifier.dispose();
+    routeCameraRequest.dispose();
     if (animationController != null) {
       animationController?.dispose();
     }
@@ -3032,36 +3044,38 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
   Future<void> checkNearByEta(List<dynamic> driverData, vsync) async {
     List etaList = !isRentalRide
         ? isMultiTypeVechiles
-        ? sortedEtaDetailsList
-        : etaDetailsList
+            ? sortedEtaDetailsList
+            : etaDetailsList
         : rentalEtaDetailsList;
     String choosenEtaTypeId =
-    etaList.isNotEmpty ? etaList[selectedVehicleIndex].typeId : '';
+        etaList.isNotEmpty ? etaList[selectedVehicleIndex].typeId : '';
     for (var element in driverData) {
       if (element['is_active'] == 1 &&
           element['is_available'] == true &&
           ((element['vehicle_types'] != null &&
-              element['vehicle_types'].contains(choosenEtaTypeId)) ||
+                  element['vehicle_types'].contains(choosenEtaTypeId)) ||
               (element['vehicle_type'] != null &&
                   element['vehicle_type'] == choosenEtaTypeId))) {
         if (((transportType == 'taxi' && element['transport_type'] == 'taxi') ||
-            (transportType == 'delivery' &&
-                element['transport_type'] == 'delivery') ||
-            element['transport_type'] == 'bidding' ||
-            element['transport_type'] == 'both')
-        // || (transportType == 'delivery' &&  element['transport_type'] == 'both')
-        ) {
+                (transportType == 'delivery' &&
+                    element['transport_type'] == 'delivery') ||
+                element['transport_type'] == 'bidding' ||
+                element['transport_type'] == 'both')
+            // || (transportType == 'delivery' &&  element['transport_type'] == 'both')
+            ) {
           DateTime dt =
-          DateTime.fromMillisecondsSinceEpoch(element['updated_at']);
+              DateTime.fromMillisecondsSinceEpoch(element['updated_at']);
 
           if (DateTime.now().difference(dt).inMinutes <= 2) {
             final String driverId = element['id'].toString();
             final String iconType = element['vehicle_type_icon'].toString();
-            
+
             // Prioritize 'heading' (compass) over 'bearing' (movement direction)
-            final double? incomingBearing = element['heading'] != null 
-                ? double.tryParse(element['heading'].toString()) 
-                : (element['bearing'] != null ? double.tryParse(element['bearing'].toString()) : null);
+            final double? incomingBearing = element['heading'] != null
+                ? double.tryParse(element['heading'].toString())
+                : (element['bearing'] != null
+                    ? double.tryParse(element['bearing'].toString())
+                    : null);
 
             final lastMarker = markerList.lastWhere(
               (e) => e.markerId.value.contains('marker#$driverId#'),
@@ -3073,15 +3087,19 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
               final double rotation = incomingBearing ?? 0.0;
               markerList.add(Marker(
                 markerId: MarkerId('marker#$driverId#$iconType'),
-                rotation: VehicleMarkerHelper.isSpriteBased(iconType) ? 0.0 : rotation,
+                rotation: VehicleMarkerHelper.sourceRotation(iconType, rotation),
                 position: LatLng(element['l'][0], element['l'][1]),
-                icon: VehicleMarkerHelper.getMarker(iconType, bearing: rotation),
+                icon:
+                    VehicleMarkerHelper.getMarker(iconType, bearing: rotation),
               ));
-              if (incomingBearing != null) myBearings[driverId] = incomingBearing;
+              if (incomingBearing != null)
+                myBearings[driverId] = incomingBearing;
             } else {
               // Existing driver, check for movement OR rotation change
-              bool hasMoved = lastMarker.position.latitude != element['l'][0] || lastMarker.position.longitude != element['l'][1];
-              bool hasRotated = incomingBearing != null && (myBearings[driverId] ?? 0.0) != incomingBearing;
+              bool hasMoved = lastMarker.position.latitude != element['l'][0] ||
+                  lastMarker.position.longitude != element['l'][1];
+              bool hasRotated = incomingBearing != null &&
+                  (myBearings[driverId] ?? 0.0) != incomingBearing;
 
               if (hasMoved || hasRotated) {
                 var dist = calculateDistance(
@@ -3091,7 +3109,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
                   lon2: double.parse(element['l'][1].toString()),
                   unit: 'km',
                 );
-                
+
                 // If it moved more than 2 meters OR it's just a rotation update
                 if (dist > 0.002 || (hasRotated && !hasMoved)) {
                   animateCar(
@@ -3100,9 +3118,13 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
                       double.parse(element['l'][0].toString()),
                       double.parse(element['l'][1].toString()),
                       vsync,
-                      (mapType == 'google_map') ? googleMapController : fmController,
+                      (mapType == 'google_map')
+                          ? googleMapController
+                          : fmController,
                       lastMarker.markerId.value,
-                      VehicleMarkerHelper.getMarker(iconType, bearing: incomingBearing ?? (myBearings[driverId] ?? 0.0)),
+                      VehicleMarkerHelper.getMarker(iconType,
+                          bearing:
+                              incomingBearing ?? (myBearings[driverId] ?? 0.0)),
                       mapType,
                       targetBearingOverride: incomingBearing);
                 }
@@ -3113,7 +3135,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       } else {
         if (markerList
             .where((e) => e.markerId.toString().contains(
-            'marker#${element['id']}#${element['vehicle_type_icon']}'))
+                'marker#${element['id']}#${element['vehicle_type_icon']}'))
             .isNotEmpty) {
           markerList.removeWhere((e) => e.markerId.toString().contains(
               'marker#${element['id']}#${element['vehicle_type_icon']}'));
@@ -3146,24 +3168,37 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       double fromLong, //Starting longitude
       double toLat, //Ending latitude
       double toLong, //Ending longitude
-      TickerProvider provider, //Ticker provider of the widget. This is used for animation
+      TickerProvider
+          provider, //Ticker provider of the widget. This is used for animation
       dynamic controller, //Google map controller of our widget
       markerid,
       icon,
       map,
       {double? targetBearingOverride}) async {
-    
     final String driverId = markerid.toString().split('#')[1];
-    final double startRotation = myBearings[driverId] ?? 0.0;
-    
+    final displayed = markerList.lastWhere(
+      (marker) => marker.markerId.value == markerid.toString(),
+      orElse: () => const Marker(markerId: MarkerId('none')),
+    );
+    final double startRotation = VehicleMarkerHelper.worldBearingFor(displayed) ??
+        (myBearings[driverId] ?? 0.0);
+    final double startLat = displayed.markerId.value == 'none'
+        ? fromLat : displayed.position.latitude;
+    final double startLng = displayed.markerId.value == 'none'
+        ? fromLong : displayed.position.longitude;
+
     // Calculate new target bearing: use override (from sensor) if available, otherwise calculate from movement
-    double targetBearing = targetBearingOverride ?? getBearing(LatLng(fromLat, fromLong), LatLng(toLat, toLong));
-    
+    double targetBearing = targetBearingOverride ??
+        getBearing(LatLng(fromLat, fromLong), LatLng(toLat, toLong));
+
     // If movement is zero and no override, don't change bearing
-    if (fromLat == toLat && fromLong == toLong && targetBearingOverride == null) {
+    if (fromLat == toLat &&
+        fromLong == toLong &&
+        targetBearingOverride == null) {
       targetBearing = startRotation;
     }
-    
+
+    targetBearing = SedanPose.normalize(targetBearing);
     myBearings[driverId] = targetBearing;
 
     animationController1?.dispose();
@@ -3173,35 +3208,35 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     );
 
     Tween<double> tween = Tween(begin: 0, end: 1);
-    
+
     // Animate from current rotation to target bearing using the shortest path
-    double rotationDiff = (targetBearing - startRotation + 180) % 360 - 180;
-    if (rotationDiff < -180) rotationDiff += 360;
+
 
     _animation1 = tween.animate(CurvedAnimation(
       parent: animationController1!,
       curve: Curves.linear,
-    ))..addListener(() async {
+    ))
+      ..addListener(() async {
         markerList.removeWhere((element) => element.markerId.value == markerid);
 
         final v = _animation1!.value;
 
         // Interpolate position
-        double lng = v * toLong + (1 - v) * fromLong;
-        double lat = v * toLat + (1 - v) * fromLat;
+        double lng = v * toLong + (1 - v) * startLng;
+        double lat = v * toLat + (1 - v) * startLat;
         LatLng newPos = LatLng(lat, lng);
-        
+
         // Interpolate rotation smoothly
-        double currentRotation = (startRotation + (rotationDiff * v)) % 360;
-        
+        double currentRotation = SedanPose.interpolateBearing(startRotation, targetBearing, v);
+
         final String iconType = markerid.toString().split('#')[2];
-        final bool isSprite = VehicleMarkerHelper.isSpriteBased(iconType);
 
         final carMarker = Marker(
             markerId: MarkerId(markerid.toString()),
             position: newPos,
-            icon: VehicleMarkerHelper.getMarker(iconType, bearing: currentRotation),
-            rotation: isSprite ? 0.0 : currentRotation,
+            icon: VehicleMarkerHelper.getMarker(iconType,
+                bearing: currentRotation),
+            rotation: VehicleMarkerHelper.sourceRotation(iconType, currentRotation),
             anchor: const Offset(0.5, 0.5),
             flat: true,
             draggable: false);
@@ -3215,22 +3250,23 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     //Starting the animation
     driverPosition = LatLng(toLat, toLong);
     await animationController1!.forward();
-    
-    // Auto-follow camera logic
-    if (userData != null && (userData!.onTripRequest != "" || userData!.metaRequest != "")) {
+
+    // Routed rides keep the route overview controlled by the map widget.
+    // Following each driver tick independently would pull that route offscreen.
+    // Rentals without a route can still follow the car at the current zoom.
+    if (polylist.length < 2 &&
+        userData != null &&
+        (userData!.onTripRequest != "" || userData!.metaRequest != "")) {
       if (map == 'google_map') {
         try {
-          googleMapController?.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
-            target: LatLng(toLat, toLong),
-            tilt: 45.0,
-            bearing: targetBearing,
-            zoom: 17.0,
-          )));
+          googleMapController
+              ?.animateCamera(CameraUpdate.newLatLng(LatLng(toLat, toLong)));
         } catch (e) {
           debugPrint("Error animating camera in animateCar: $e");
         }
       } else {
-        fmController?.move(fmlt.LatLng(toLat, toLong), 15.0);
+        fmController?.move(
+            fmlt.LatLng(toLat, toLong), fmController?.camera.zoom ?? 15.0);
       }
     }
   }
@@ -3309,13 +3345,13 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     final data = await serviceLocator<BookingUsecase>()
         .addTips(requestId: event.requestId, amount: event.amount);
     data.fold(
-          (error) {
+      (error) {
         debugPrint(error.toString());
         if (error.message == 'logout') {
           emit(LogoutState());
         }
       },
-          (success) {
+      (success) {
         if (success['success']) {
           requestBillData = RequestBillData.fromJson(success['data']);
           FirebaseDatabase.instance
@@ -3330,7 +3366,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
   Future addDistanceMarker(LatLng position, double distanceMeter,
       {double? time}) async {
     markerList.removeWhere(
-            (element) => element.markerId == const MarkerId('distance'));
+        (element) => element.markerId == const MarkerId('distance'));
     double duration;
     String totalDistance;
     String unitLabel;
@@ -3338,7 +3374,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     bool isMiles = userData?.distanceUnit == 'mi';
 
     double convertedDistance =
-    isMiles ? ((distanceMeter / 1000) * 0.621371) : (distanceMeter / 1000);
+        isMiles ? ((distanceMeter / 1000) * 0.621371) : (distanceMeter / 1000);
 
     unitLabel = isMiles ? 'MI' : 'KM';
 
@@ -3361,80 +3397,85 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     }
 
     markerList.add(Marker(
-      anchor: const Offset(0.5, 0.0),
+      // Float the ETA pill above the destination pin (anchor point sits well
+      // below the image, so the whole card clears the pin below it).
+      anchor: const Offset(0.5, 1.75),
       markerId: const MarkerId("distance"),
       position: position,
       rotation: 0.0,
       icon: await Directionality(
           textDirection: TextDirection.ltr,
           child: Container(
-            margin: const EdgeInsets.only(top: 10),
-            height: 60,
-            width: 110,
+            margin: const EdgeInsets.fromLTRB(8, 12, 8, 8),
+            height: 48,
             decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.primary, width: 1)),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.20),
+                  blurRadius: 7,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 44,
-                  height: 60,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: const BoxDecoration(
-                      borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(8),
-                          bottomLeft: Radius.circular(8)),
-                      color: AppColors.primary),
+                    gradient: AppColors.beaconGradient,
+                    borderRadius:
+                        BorderRadius.horizontal(left: Radius.circular(14)),
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: MyText(
-                          text: totalDistance,
-                          textStyle: AppTextStyle.normalStyle().copyWith(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold),
-                        ),
+                      MyText(
+                        text: totalDistance,
+                        textStyle: AppTextStyle.normalStyle().copyWith(
+                            color: Colors.white,
+                            fontSize: 13,
+                            height: 1,
+                            fontWeight: FontWeight.w800),
                       ),
+                      const SizedBox(height: 2),
                       MyText(
                         text: unitLabel,
                         textStyle: AppTextStyle.normalStyle().copyWith(
-                            color: Colors.white,
-                            fontSize: 8),
+                            color: Colors.white70, fontSize: 9, height: 1),
                       ),
                     ],
                   ),
                 ),
-                Expanded(
-                  child: Container(
-                    alignment: Alignment.center,
-                    height: 60,
-                    decoration: const BoxDecoration(
-                        borderRadius: BorderRadius.only(
-                            topRight: Radius.circular(8),
-                            bottomRight: Radius.circular(8)),
-                        color: Colors.white),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: MyText(
-                          text: ((duration) > 60)
-                              ? '${(duration / 60).toStringAsFixed(1)} hrs'
-                              : '${duration.toStringAsFixed(0)} mins',
-                          textStyle: AppTextStyle.normalStyle()
-                              .copyWith(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold),
-                        ),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.schedule_rounded,
+                          size: 13, color: AppColors.primary),
+                      const SizedBox(width: 4),
+                      MyText(
+                        text: ((duration) > 60)
+                            ? '${(duration / 60).toStringAsFixed(1)} hr'
+                            : '${duration.toStringAsFixed(0)} min',
+                        textStyle: AppTextStyle.normalStyle().copyWith(
+                            color: AppColors.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ],
             ),
           )).toBitmapDescriptor(
-        logicalSize: const Size(120, 70),
-        imageSize: const Size(240, 140),
+        logicalSize: const Size(180, 72),
+        imageSize: const Size(540, 216),
       ),
     ));
     if (!isClosed) {
@@ -3500,7 +3541,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
             name: event.requestData!.requestStops.data[i].pocName,
             number: event.requestData!.requestStops.data[i].pocMobile,
             instructions:
-            event.requestData!.requestStops.data[i].pocInstruction,
+                event.requestData!.requestStops.data[i].pocInstruction,
             pickup: false));
       }
     } else if (event.requestData != null &&
@@ -3530,7 +3571,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     polyLine = event.arg.requestData.polyLine;
     distance = event.arg.requestData.unit == 'MILES'
         ? ((double.parse(event.arg.requestData.totalDistance) * 1.60934) * 1000)
-        .toString()
+            .toString()
         : (double.parse(event.arg.requestData.totalDistance) * 1000).toString();
     duration = event.arg.requestData.totalTime;
     for (var i = 0; i < dropAddressList.length; i++) {
@@ -3685,7 +3726,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       await loadSavedContacts();
 
       final index = savedContacts.indexWhere(
-            (c) => c.number == event.contactMobile,
+        (c) => c.number == event.contactMobile,
       );
       selectedSavedContactIndex = (index != -1) ? index : null;
     } else {
@@ -3722,14 +3763,14 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       emit(BookingLoadingStartState());
       if (contactsList.isEmpty) {
         final contactsPermissionStatus =
-        await FlutterContacts.permissions.request(PermissionType.readWrite);
+            await FlutterContacts.permissions.request(PermissionType.readWrite);
         if (contactsPermissionStatus == fc.PermissionStatus.granted) {
           List<Contact> contacts =
-          await FlutterContacts.getAll(properties: ContactProperties.all);
+              await FlutterContacts.getAll(properties: ContactProperties.all);
           for (var contact in contacts) {
             for (var phone in contact.phones) {
               contactsList.add(ContactsModel(
-                name: contact.displayName??'',
+                name: contact.displayName ?? '',
                 number: phone.number,
               ));
             }
@@ -3785,7 +3826,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       AddMarkersEvent event, Emitter<BookingState> emit) async {
     if (event.addressList == null) {
       markerList.removeWhere(
-              (element) => !element.markerId.value.toString().contains('#'));
+          (element) => !element.markerId.value.toString().contains('#'));
       if (event.requestData.requestStops != null &&
           event.requestData.requestStops.data.length > 1) {
         for (var i = 0; i < event.requestData.requestStops.data.length; i++) {
@@ -3821,18 +3862,18 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
               double.parse(event.requestData.dropLng)),
           event.requestData.unit == 'MILES'
               ? ((double.parse(event.requestData.totalDistance) * 1.60934) *
-              1000)
+                  1000)
               : (double.parse(event.requestData.totalDistance) * 1000),
           time: double.parse(event.requestData.totalTime));
     } else {
       markerList.removeWhere(
-              (element) => !element.markerId.value.toString().contains('#'));
+          (element) => !element.markerId.value.toString().contains('#'));
       if (event.addressList!.length > 1) {
         for (var i = 0; i < event.addressList!.length; i++) {
           markerList.add(Marker(
             markerId: MarkerId("drop$i"),
             position:
-            LatLng(event.addressList![i].lat, event.addressList![i].lng),
+                LatLng(event.addressList![i].lat, event.addressList![i].lng),
             rotation: 0.0,
             icon: await MarkerWidget(
               isPickup: false,
@@ -3847,7 +3888,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         markerList.add(Marker(
           markerId: const MarkerId("drop"),
           position:
-          LatLng(event.addressList!.last.lat, event.addressList!.last.lng),
+              LatLng(event.addressList!.last.lat, event.addressList!.last.lng),
           rotation: 0.0,
           icon: await MarkerWidget(
             isPickup: false,
@@ -3882,7 +3923,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     if (event.from == '1') {
       printWrapped('text 222111 ---- ');
       paymentUrl =
-      '${event.url}?amount=${event.money}&payment_for=request&currency=${event.currencySymbol}&user_id=${event.userId.toString()}&request_id=${event.requestId.toString()}';
+          '${event.url}?amount=${event.money}&payment_for=request&currency=${event.currencySymbol}&user_id=${event.userId.toString()}&request_id=${event.requestId.toString()}';
     }
     final Uri uri = Uri.parse(paymentUrl);
     if (await canLaunchUrl(uri)) {
@@ -3907,9 +3948,9 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
   }
 
   Future<void> selectPreferenceEvent(
-      SelectedPreferenceEvent event,
-      Emitter<BookingState> emit,
-      ) async {
+    SelectedPreferenceEvent event,
+    Emitter<BookingState> emit,
+  ) async {
     if (event.isSelected) {
       if (!tempSelectPreference.contains(event.prefId)) {
         tempSelectPreference.add(event.prefId);
@@ -3926,9 +3967,9 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
   }
 
   Future<void> confirmPreferenceSelection(
-      ConfirmPreferenceSelectionEvent event,
-      Emitter<BookingState> emit,
-      ) async {
+    ConfirmPreferenceSelectionEvent event,
+    Emitter<BookingState> emit,
+  ) async {
     selectPreference = List<int>.from(tempSelectPreference);
     selectedPreferenceDetailsList = List<int>.from(tempSelectPreference);
     selectedPreferenceIconsList = List<String>.from(tempSelectPreferenceIcons);
@@ -3937,7 +3978,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     // can display its own selection. We key by a stable field: typeId.
     if (!isRentalRide && tempSelectPreference.isNotEmpty) {
       final baseList =
-      isMultiTypeVechiles ? sortedEtaDetailsList : etaDetailsList;
+          isMultiTypeVechiles ? sortedEtaDetailsList : etaDetailsList;
       if (baseList.isNotEmpty &&
           selectedVehicleIndex >= 0 &&
           selectedVehicleIndex < baseList.length) {
@@ -3945,7 +3986,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           final currentTypeId =
               (baseList[selectedVehicleIndex] as dynamic).typeId;
           vehiclePreferenceByTypeId[currentTypeId] =
-          List<int>.from(tempSelectPreference);
+              List<int>.from(tempSelectPreference);
         } catch (_) {
           // If for some reason typeId is not available, skip per-vehicle storage
         }
@@ -3959,10 +4000,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     emit(PromoCodeListLoadingState());
     final data = await serviceLocator<AccUsecase>().getPromoCodeList();
     data.fold(
-          (error) {
+      (error) {
         emit(PromoCodeListFailureState());
       },
-          (success) {
+      (success) {
         promoCodeDataList = success.data;
         for (var element in promoCodeDataList) {
           if (element.isApplied) {

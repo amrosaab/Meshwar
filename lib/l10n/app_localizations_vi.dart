@@ -1836,4 +1836,37 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get documents => 'Tài liệu';
+
+  @override
+  String get rideCall => 'Gọi';
+
+  @override
+  String get noDriversNearbyTitle => 'Không có tài xế gần đây';
+
+  @override
+  String get noDriversNearbyBody =>
+      'Hiện tại chúng tôi chưa tìm được tài xế cho chuyến đi này.';
+
+  @override
+  String get noDriversNearbyHint =>
+      'Hãy thử lại sau ít phút hoặc điều chỉnh điểm đón.';
+
+  @override
+  String get backToRide => 'Quay lại chuyến đi';
+
+  @override
+  String get cancelRideConfirmationTitle => 'Hủy chuyến đi này?';
+
+  @override
+  String get cancelRideSearchBody =>
+      'Bạn có thể tiếp tục tìm tài xế hoặc hủy yêu cầu này.';
+
+  @override
+  String get keepSearching => 'Tiếp tục tìm kiếm';
+
+  @override
+  String get profilePhoto => 'Ảnh đại diện';
+
+  @override
+  String get changeProfilePhoto => 'Đổi ảnh';
 }

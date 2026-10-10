@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.5+5
+version: 1.0.10+10
 
 environment:
   sdk: '>=3.4.1 <4.0.0'
@@ -34,7 +34,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.9
-  dio: ^5.11.0
+  dio: ^5.11.1
   dartz: ^0.10.1
   flutter_localizations:
     sdk: flutter
@@ -46,11 +46,19 @@ dependencies:
   fluttertoast: ^10.0.0
   flutter_svg: ^2.3.0
   carousel_slider_plus: ^7.1.2
+  # Pinned below their latest majors: 10.0.0 (pin_code_fields),
+  # cached_network_image's newer platform-interface, and shimmer 4.0.0
+  # (further down) all now depend on the new material_ui/cupertino_ui
+  # packages, which use the @awaitNotRequired Dart SDK annotation — not
+  # defined in this project's installed Dart 3.12.2, so it fails with
+  # "Undefined name 'awaitNotRequired'" at compile time. Revert once the
+  # installed Flutter/Dart SDK is upgraded past whatever version first
+  # ships that annotation.
   pin_code_fields: ^9.4.0
-  equatable: ^2.1.0
+  equatable: ^3.0.0
   cached_network_image: ^3.4.1
   image_picker: ^1.2.3
-  permission_handler: ^12.0.3
+  permission_handler: ^13.0.2
   page_transition: ^2.2.2
   share_plus: ^13.3.0
   url_launcher: ^6.3.2
@@ -59,14 +67,14 @@ dependencies:
   audioplayers: ^6.8.1
   path_provider: ^2.1.6
   uuid: ^4.6.0
-  pin_code_text_field: ^1.0.8
+  pin_code_text_field: ^1.8.0
 
   change_app_package_name: ^1.5.0
   flutter_inappwebview: ^6.1.5
-  webview_flutter_android: ^4.13.0
-  webview_flutter_wkwebview: ^3.26.0
+  webview_flutter_android: ^4.14.1
+  webview_flutter_wkwebview: ^3.26.1
   rxdart: ^0.28.0
-  file_picker: ^12.0.0-beta.7
+  file_picker: ^13.1.0
   device_info_plus: ^13.2.0
 
   # State Management
@@ -74,29 +82,36 @@ dependencies:
   flutter_bloc: ^9.1.1
 
   # Maps & Location
-  google_maps_flutter: ^2.18.0
+  google_maps_flutter: ^2.18.1
   flutter_map: ^8.3.2
   location: ^10.0.2
   geolocator: ^14.0.3
   latlong2: ^0.9.1
 
   # localNotificaion
-  flutter_local_notifications: ^22.2.0
+  flutter_local_notifications: ^22.3.1
 
-  # Firebase
-  firebase_auth: ^6.5.7
-  firebase_core: ^4.13.0
-  firebase_database: ^12.4.7
-  firebase_messaging: ^16.5.0
+  # Firebase — all four exact-pinned (no ^) to the last set confirmed
+  # working together this session. Firebase's Flutter plugins coordinate
+  # their native SDK version through firebase_core (visible at pod-install
+  # time as "Using Firebase SDK version 'X' defined in 'firebase_core'"), so
+  # they have to move as a matched set. Pinning only firebase_auth back
+  # (6.7.0's Dart-level migrateCurrentUser bug) while firebase_core stayed
+  # on a newer caret range broke native header compatibility instead
+  # ("FLTFirebaseCorePlugin.h file not found" compiling firebase_auth's iOS
+  # sources) — a caret constraint here just sets a lower bound, so pub kept
+  # resolving firebase_core to its newest version regardless.
+  firebase_auth: ^6.7.0
+  firebase_core: ^4.15.0
+  firebase_database: ^12.6.0
+  firebase_messaging: ^16.7.0
+  flutter_native_splash: ^2.4.8
 
   #shimmer
   shimmer: ^3.0.0
 
-  #clipboard
-  clipboard: ^3.0.14
-
   #contacts
-  flutter_contacts: ^2.3.1
+  flutter_contacts: ^2.5.0
 
   #connectivity
   connectivity_plus: ^7.3.1
@@ -109,21 +124,20 @@ dependencies:
   flutter_animarker: ^3.2.0
 
   #local db
-  drift: ^2.34.3
+  drift: ^2.35.0
   drift_flutter: ^0.3.1
 
-  # Stripe
-  flutter_stripe: ^13.1.0
+  # Stripefirebase_auth
+  flutter_stripe: ^14.0.0
 
   # Html View
   flutter_html: ^3.0.0
 
   flutter_map_tile_caching: ^10.1.1
   image_cropper: ^12.2.1
-  icons_launcher: ^3.1.0
-  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.14.4
   flutter_test:
     sdk: flutter
 
@@ -142,11 +156,25 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
 
+  # A handful of plugins (google_maps_flutter_ios, flutter_inappwebview_ios,
+  # objectbox_flutter_libs) don't support Swift Package Manager yet, so
+  # Flutter falls back to a CocoaPods+SPM hybrid for iOS. That hybrid is what
+  # repeatedly broke builds with a "Target Integrity...supports 13.0" error —
+  # the generated FlutterGeneratedPluginSwiftPackage manifest kept
+  # regenerating with a stale default deployment target that Flutter's own
+  # patch step didn't reliably fix. The Xcode project has been un-migrated
+  # back to pure CocoaPods (see project.pbxproj); this stops Flutter from
+  # re-adding the SPM integration on the next build.
+  config:
+    enable-swift-package-manager: false
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
 
   uses-material-design: true
+  shaders:
+    - shaders/driver_search_absorb.frag
   generate: true
 
   # To add assets to your application, add an assets section, like this:
@@ -155,6 +183,7 @@ flutter:
     - assets/images/
     - assets/svg/
     - assets/audio/
+    - assets/sedan_sprites/
     - assets/car_sprites/
     - assets/bike_sprites/
     - assets/van_sprites/
@@ -184,12 +213,32 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-icons_launcher:
+flutter_launcher_icons:
   image_path: "assets/images/logo.png"
-  platforms:
-    android:
-      enable: true
-      adaptive_background_color: "#D40B40"
-      adaptive_foreground_image: "assets/images/logo_foreground_padded.png"
-    ios:
-      enable: true
+  android: true
+  ios: true
+  adaptive_icon_background: "#D40B40"
+  adaptive_icon_foreground: "assets/images/logo_foreground_padded.png"
+  adaptive_icon_foreground_inset: 0
+
+# Native (OS-level) splash shown instantly on launch, before the Flutter
+# engine initializes — closes the white-flash gap that showed before the
+# app's own GIF-based LoaderPage could take over. logo_foreground_padded.png
+# (transparent background, just the white mark) is used rather than
+# logo.png, since this image is composited on top of `color` — logo.png's
+# own baked-in red background would show as a mismatched red square instead
+# of filling edge-to-edge.
+flutter_native_splash:
+  color: "#D40D42"
+  image: assets/images/logo_foreground_padded.png
+  android_12:
+    color: "#D40D42"
+    image: assets/images/logo_foreground_padded.png
+
+# html 0.15.7 removed the top-level matches() function from its internal
+# query_selector.dart (flutter_html 3.0.0 reaches into that private API —
+# see its own TODO/ignore comment in styled_element.dart), breaking the
+# build with "Method not found: 'matches'". Pinned to the last version that
+# still has it until flutter_html publishes a fix.
+dependency_overrides:
+  html: 0.15.6

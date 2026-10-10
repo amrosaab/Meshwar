@@ -15,6 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../common/common.dart';
 import '../../../../common/pickup_icon.dart';
 import '../../../../common/vehicle_marker_helper.dart';
+import '../../../../common/sedan_pose.dart';
 import '../../../../core/utils/custom_button.dart';
 import '../../../../core/utils/custom_text.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -33,6 +34,18 @@ class HomeBodyWidget extends StatefulWidget {
 
 class _HomeBodyWidgetState extends State<HomeBodyWidget>
     with SingleTickerProviderStateMixin {
+  double _vehicleCameraBearing = 0;
+  double _vehicleCameraTilt = 0;
+
+  void _updateVehicleCamera(double bearing, {double tilt = 0}) {
+    if (!bearing.isFinite) return;
+    final changed = SedanPose.turnDelta(_vehicleCameraBearing, bearing).abs() > 0.1 ||
+        (_vehicleCameraTilt - tilt).abs() > 0.1;
+    _vehicleCameraBearing = bearing;
+    _vehicleCameraTilt = tilt.isFinite ? tilt : 0;
+    if (changed && mounted) setState(() {});
+  }
+
   late final AnimationController _markerAnimationController;
   final Map<String, fmlt.LatLng> _startMarkerPoints = {};
   final Map<String, fmlt.LatLng> _targetMarkerPoints = {};
@@ -295,6 +308,7 @@ class _HomeBodyWidgetState extends State<HomeBodyWidget>
                           onCameraMove: (CameraPosition? position) {
                             if (position != null) {
                               if (!context.mounted) return;
+                              _updateVehicleCamera(position.bearing, tilt: position.tilt);
                               homeBloc.currentLatLng = position.target;
                             }
                           },
@@ -313,7 +327,10 @@ class _HomeBodyWidgetState extends State<HomeBodyWidget>
                             }
                           },
                           markers: homeBloc.markerList.isNotEmpty
-                              ? Set.from(homeBloc.markerList)
+                              ? homeBloc.markerList.map((marker) =>
+                                  VehicleMarkerHelper.projectForCamera(marker,
+                                    cameraBearing: _vehicleCameraBearing,
+                                    cameraTilt: _vehicleCameraTilt)).toSet()
                               : {},
                           minMaxZoomPreference:
                           const MinMaxZoomPreference(13, 20),
@@ -351,6 +368,7 @@ class _HomeBodyWidgetState extends State<HomeBodyWidget>
                             );
                           },
                           onMapEvent: (v) async {
+                            _updateVehicleCamera(-v.camera.rotation);
                             if (v.source ==
                                 fm.MapEventSource.nonRotatedSizeChange) {
                               homeBloc.fmLatLng = fmlt.LatLng(
@@ -371,9 +389,13 @@ class _HomeBodyWidgetState extends State<HomeBodyWidget>
                               homeBloc.currentLatLng = LatLng(
                                   v.camera.center.latitude,
                                   v.camera.center.longitude);
+                              if (!homeBloc.isDragging) {
+                                homeBloc.isDragging = true;
+                              }
                               homeBloc.add(UpdateEvent());
                             }
                             if (v.source == fm.MapEventSource.dragEnd) {
+                              homeBloc.isDragging = false;
                               homeBloc.add(
                                 UpdateLocationEvent(
                                   isFromHomePage: true,
@@ -425,7 +447,10 @@ class _HomeBodyWidgetState extends State<HomeBodyWidget>
                                 return MapEntry(
                                   k,
                                   fm.Marker(
-                                    alignment: Alignment.topCenter,
+                                    width: VehicleMarkerHelper.isSedanMarker(marker) ? 64 : 30,
+                                    height: VehicleMarkerHelper.isSedanMarker(marker) ? 64 : 30,
+                                    rotate: VehicleMarkerHelper.isSedanMarker(marker),
+                                    alignment: VehicleMarkerHelper.isSedanMarker(marker) ? Alignment.center : Alignment.topCenter,
                                     point: _interpolatedPoint(
                                         marker.markerId.value) ??
                                         fmlt.LatLng(
@@ -434,8 +459,14 @@ class _HomeBodyWidgetState extends State<HomeBodyWidget>
                                         ),
                                     child: RotationTransition(
                                       turns: AlwaysStoppedAnimation(
-                                          marker.rotation / 360),
-                                      child: Image.asset(
+                                          (VehicleMarkerHelper.isSedanMarker(marker)
+                                              ? VehicleMarkerHelper.rotationForCamera(marker,
+                                                  cameraBearing: _vehicleCameraBearing)
+                                              : marker.rotation) / 360),
+                                      child: VehicleMarkerHelper.isSedanMarker(marker)
+                                          ? Image.asset(VehicleMarkerHelper.sedanAssetFor(marker,
+                                              cameraBearing: _vehicleCameraBearing)!, width: 64, height: 64)
+                                          : Image.asset(
                                         (marker.markerId.value
                                             .toString()
                                             .contains('truck'))
@@ -504,7 +535,11 @@ class _HomeBodyWidgetState extends State<HomeBodyWidget>
                     ),
                     ),
 
-                    // Marker in the center of the screen
+                    // Marker in the center of the screen — lifts up with a
+                    // connecting thread + shrinking shadow while the map is
+                    // being dragged, then drops back with a small bounce,
+                    // mirroring the pin-lift used on the "Select from Map"
+                    // screen.
                     Positioned(
                       child: Container(
                         height: size.height * 0.8,
@@ -513,11 +548,55 @@ class _HomeBodyWidgetState extends State<HomeBodyWidget>
                         child: Padding(
                           padding: EdgeInsets.only(
                               bottom: (screenWidth * 0.3) + (size.height * homeBloc.sheetSize * 0.3)),
-                          child: Image.asset(
-                            AppImages.confirmationPin,
-                            width: size.width * 0.12,
-                            height: size.width * 0.12,
-                          ),
+                          child: Builder(builder: (context) {
+                            final pinSize = size.width * 0.12;
+                            const liftHeight = 18.0;
+                            final isDragging = homeBloc.isDragging;
+                            return SizedBox(
+                              width: pinSize,
+                              height: pinSize,
+                              child: Stack(
+                                alignment: Alignment.bottomCenter,
+                                clipBehavior: Clip.none,
+                                children: [
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    curve: Curves.easeOut,
+                                    margin: const EdgeInsets.only(bottom: 1),
+                                    width: isDragging ? 10 : 16,
+                                    height: isDragging ? 4 : 6,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(
+                                          alpha: isDragging ? 0.16 : 0.28),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                  ),
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    curve: Curves.easeOut,
+                                    margin: const EdgeInsets.only(bottom: 4),
+                                    width: 1.4,
+                                    height: isDragging ? liftHeight - 4 : 0,
+                                    color: Colors.black.withValues(alpha: 0.35),
+                                  ),
+                                  AnimatedSlide(
+                                    duration: Duration(
+                                        milliseconds: isDragging ? 160 : 450),
+                                    curve: isDragging
+                                        ? Curves.easeOut
+                                        : Curves.elasticOut,
+                                    offset: Offset(
+                                        0, isDragging ? -liftHeight / pinSize : 0),
+                                    child: Image.asset(
+                                      AppImages.confirmationPin,
+                                      width: pinSize,
+                                      height: pinSize,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
                         ),
                       ),
                     ),

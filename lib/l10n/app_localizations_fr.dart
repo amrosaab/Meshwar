@@ -1871,4 +1871,37 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get documents => 'Documents';
+
+  @override
+  String get rideCall => 'Appeler';
+
+  @override
+  String get noDriversNearbyTitle => 'Aucun chauffeur à proximité';
+
+  @override
+  String get noDriversNearbyBody =>
+      'Nous n’avons pas trouvé de chauffeur pour ce trajet pour le moment.';
+
+  @override
+  String get noDriversNearbyHint =>
+      'Réessayez dans quelques instants ou modifiez votre lieu de prise en charge.';
+
+  @override
+  String get backToRide => 'Retour au trajet';
+
+  @override
+  String get cancelRideConfirmationTitle => 'Annuler cette course ?';
+
+  @override
+  String get cancelRideSearchBody =>
+      'Vous pouvez continuer la recherche ou annuler cette demande.';
+
+  @override
+  String get keepSearching => 'Continuer la recherche';
+
+  @override
+  String get profilePhoto => 'Photo de profil';
+
+  @override
+  String get changeProfilePhoto => 'Changer la photo';
 }

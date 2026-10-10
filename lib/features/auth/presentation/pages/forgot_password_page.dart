@@ -146,16 +146,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                                           .textTheme
                                           .bodySmall!
                                           .copyWith(
-                                          color:
-                                          Theme.of(context).hintColor,
-                                          fontSize: 14),
+                                              color:
+                                                  Theme.of(context).hintColor,
+                                              fontSize: 14),
                                     ),
                                     SizedBox(
                                       height: size.width * 0.05,
                                     ),
                                     Row(
                                       mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Row(
                                           children: [
@@ -176,11 +176,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                                                     .textTheme
                                                     .bodyMedium!
                                                     .copyWith(
-                                                    fontSize: (widget.arg
-                                                        .isLoginByEmail ==
-                                                        false)
-                                                        ? 18
-                                                        : 16),
+                                                        fontSize: (widget.arg
+                                                                    .isLoginByEmail ==
+                                                                false)
+                                                            ? 18
+                                                            : 16),
                                                 maxLines: 2,
                                               ),
                                             ),
@@ -191,43 +191,43 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                                             Navigator.pushNamedAndRemoveUntil(
                                                 context,
                                                 LoginPage.routeName,
-                                                    (route) => false);
+                                                (route) => false);
                                           },
                                           child: MyText(
                                             text: (widget.arg.isLoginByEmail ==
-                                                false)
+                                                    false)
                                                 ? AppLocalizations.of(context)!
-                                                .changeNumber
+                                                    .changeNumber
                                                 : AppLocalizations.of(context)!
-                                                .changeEmail,
+                                                    .changeEmail,
                                             textStyle: Theme.of(context)
                                                 .textTheme
                                                 .bodyMedium!
                                                 .copyWith(
-                                              color: AppColors.primary,
-                                              fontSize: ((context
-                                                  .read<
-                                                  AuthBloc>()
-                                                  .languageCode ==
-                                                  'fr' ||
-                                                  context
-                                                      .read<
-                                                      AuthBloc>()
-                                                      .languageCode ==
-                                                      'az' ||
-                                                  (context
-                                                      .read<
-                                                      AuthBloc>()
-                                                      .languageCode ==
-                                                      'es') ||
-                                                  context
-                                                      .read<
-                                                      AuthBloc>()
-                                                      .languageCode ==
-                                                      'sq'))
-                                                  ? 10
-                                                  : 11,
-                                            ),
+                                                  color: AppColors.primary,
+                                                  fontSize: ((context
+                                                                  .read<
+                                                                      AuthBloc>()
+                                                                  .languageCode ==
+                                                              'fr' ||
+                                                          context
+                                                                  .read<
+                                                                      AuthBloc>()
+                                                                  .languageCode ==
+                                                              'az' ||
+                                                          (context
+                                                                  .read<
+                                                                      AuthBloc>()
+                                                                  .languageCode ==
+                                                              'es') ||
+                                                          context
+                                                                  .read<
+                                                                      AuthBloc>()
+                                                                  .languageCode ==
+                                                              'sq'))
+                                                      ? 10
+                                                      : 11,
+                                                ),
                                           ),
                                         ),
                                       ],
@@ -271,19 +271,19 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
         isLoader: context.read<AuthBloc>().isLoading,
         onTap: () {
           context.read<AuthBloc>().add(
-            ConfirmOrVerifyOTPEvent(
-              isUserExist: true,
-              isLoginByEmail: widget.arg.isLoginByEmail,
-              isOtpVerify: true,
-              isForgotPasswordVerify: true,
-              mobileOrEmail: widget.arg.emailOrMobile,
-              otp: context.read<AuthBloc>().otpController.text,
-              password: '',
-              firebaseVerificationId:
-              context.read<AuthBloc>().firebaseVerificationId,
-              context: context,
-            ),
-          );
+                ConfirmOrVerifyOTPEvent(
+                  isUserExist: true,
+                  isLoginByEmail: widget.arg.isLoginByEmail,
+                  isOtpVerify: true,
+                  isForgotPasswordVerify: true,
+                  mobileOrEmail: widget.arg.emailOrMobile,
+                  otp: context.read<AuthBloc>().otpController.text,
+                  password: '',
+                  firebaseVerificationId:
+                      context.read<AuthBloc>().firebaseVerificationId,
+                  context: context,
+                ),
+              );
         },
       ),
     );
@@ -296,47 +296,50 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
         MyText(
           text: AppLocalizations.of(context)!.enterOtp,
           textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-            fontSize: 16,
-            color: Theme.of(context).primaryColorDark,
-          ),
+                fontSize: 16,
+                color: Theme.of(context).primaryColorDark,
+              ),
         ),
         const SizedBox(height: 10),
-        MaterialPinField(
-          pinController: context.read<AuthBloc>().otpController,
-          length: 6,
-          obscureText: false,
-          blinkWhenObscuring: false,
-          autoFocus: true,
-          enableAutofill: false,
-          keyboardType: TextInputType.number,
-          theme: MaterialPinTheme(
-            textStyle: Theme.of(context).textTheme.bodyLarge,
-            entryAnimation: MaterialPinAnimation.fade,
-            animationDuration: const Duration(milliseconds: 300),
-            shape: MaterialPinShape.outlined,
-            borderRadius: BorderRadius.circular(12),
-            cellSize: const Size(45, 45),
-            filledFillColor: Theme.of(context).scaffoldBackgroundColor,
-            fillColor: Theme.of(context).scaffoldBackgroundColor,
-            borderColor: AppColors.borderColors,
-            focusedFillColor: Theme.of(context).scaffoldBackgroundColor,
-            focusedBorderColor: Theme.of(context).disabledColor,
-            filledBorderColor: AppColors.borderColors,
-            borderWidth: 1,
-            focusedBorderWidth: 1,
-            cursorColor: Theme.of(context).dividerColor,
-            boxShadows: const [
-              BoxShadow(
-                offset: Offset(0, 1),
-                color: Colors.black12,
-                blurRadius: 10,
-              )
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: MaterialPinField(
+            pinController: context.read<AuthBloc>().otpController,
+            length: 6,
+            obscureText: false,
+            blinkWhenObscuring: false,
+            autoFocus: true,
+            enableAutofill: false,
+            keyboardType: TextInputType.number,
+            theme: MaterialPinTheme(
+              textStyle: Theme.of(context).textTheme.bodyLarge,
+              entryAnimation: MaterialPinAnimation.fade,
+              animationDuration: const Duration(milliseconds: 300),
+              shape: MaterialPinShape.outlined,
+              borderRadius: BorderRadius.circular(12),
+              cellSize: const Size(45, 45),
+              filledFillColor: Theme.of(context).scaffoldBackgroundColor,
+              fillColor: Theme.of(context).scaffoldBackgroundColor,
+              borderColor: AppColors.borderColors,
+              focusedFillColor: Theme.of(context).scaffoldBackgroundColor,
+              focusedBorderColor: Theme.of(context).disabledColor,
+              filledBorderColor: AppColors.borderColors,
+              borderWidth: 1,
+              focusedBorderWidth: 1,
+              cursorColor: Theme.of(context).dividerColor,
+              boxShadows: const [
+                BoxShadow(
+                  offset: Offset(0, 1),
+                  color: Colors.black12,
+                  blurRadius: 10,
+                )
+              ],
+            ),
+            onChanged: (_) => context.read<AuthBloc>().add(OTPOnChangeEvent()),
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
             ],
           ),
-          onChanged: (_) => context.read<AuthBloc>().add(OTPOnChangeEvent()),
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-          ],
         ),
         const SizedBox(height: 10),
         Row(
@@ -347,55 +350,55 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                   ? '${AppLocalizations.of(context)!.resendOtp}  00:${context.read<AuthBloc>().timerDuration}'
                   : '${AppLocalizations.of(context)!.resendOtp} 00:00',
               textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                color: context.read<AuthBloc>().timerDuration != 0
-                    ? Theme.of(context).hintColor
-                    : Theme.of(context).primaryColorDark,
-                fontSize: ((context.read<AuthBloc>().languageCode == 'fr' ||
-                    context.read<AuthBloc>().languageCode == 'az' ||
-                    (context.read<AuthBloc>().languageCode == 'es') ||
-                    context.read<AuthBloc>().languageCode == 'sq'))
-                    ? 10
-                    : 14,
-              ),
+                    color: context.read<AuthBloc>().timerDuration != 0
+                        ? Theme.of(context).hintColor
+                        : Theme.of(context).primaryColorDark,
+                    fontSize: ((context.read<AuthBloc>().languageCode == 'fr' ||
+                            context.read<AuthBloc>().languageCode == 'az' ||
+                            (context.read<AuthBloc>().languageCode == 'es') ||
+                            context.read<AuthBloc>().languageCode == 'sq'))
+                        ? 10
+                        : 14,
+                  ),
             ),
             InkWell(
               onTap: context.read<AuthBloc>().timerDuration != 0
                   ? null
                   : () {
-                context.read<AuthBloc>().add(
-                  SignInWithOTPEvent(
-                    isOtpVerify: true,
-                    isForgotPassword: true,
-                    dialCode: widget.arg.contryCode,
-                    mobileOrEmail: widget.arg.emailOrMobile,
-                    isLoginByEmail: widget.arg.isLoginByEmail,
-                    context: context,
-                  ),
-                );
-                timerCount(context, duration: 60);
-              },
+                      context.read<AuthBloc>().add(
+                            SignInWithOTPEvent(
+                              isOtpVerify: true,
+                              isForgotPassword: true,
+                              dialCode: widget.arg.contryCode,
+                              mobileOrEmail: widget.arg.emailOrMobile,
+                              isLoginByEmail: widget.arg.isLoginByEmail,
+                              context: context,
+                            ),
+                          );
+                      timerCount(context, duration: 60);
+                    },
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(6),
                     color: AppColors.white,
                     border:
-                    Border.all(width: 1.1, color: AppColors.borderColors)),
+                        Border.all(width: 1.1, color: AppColors.borderColors)),
                 child: MyText(
                   text: AppLocalizations.of(context)!.resendOtp,
                   textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontSize: ((context.read<AuthBloc>().languageCode ==
-                        'fr' ||
-                        context.read<AuthBloc>().languageCode == 'az' ||
-                        (context.read<AuthBloc>().languageCode ==
-                            'es') ||
-                        context.read<AuthBloc>().languageCode == 'sq'))
-                        ? 10
-                        : 14,
-                    color: context.read<AuthBloc>().timerDuration != 0
-                        ? AppColors.primary.withOpacity(0.5)
-                        : AppColors.primary,
-                  ),
+                        fontSize: ((context.read<AuthBloc>().languageCode ==
+                                    'fr' ||
+                                context.read<AuthBloc>().languageCode == 'az' ||
+                                (context.read<AuthBloc>().languageCode ==
+                                    'es') ||
+                                context.read<AuthBloc>().languageCode == 'sq'))
+                            ? 10
+                            : 14,
+                        color: context.read<AuthBloc>().timerDuration != 0
+                            ? AppColors.primary.withOpacity(0.5)
+                            : AppColors.primary,
+                      ),
                 ),
               ),
             ),

@@ -1854,4 +1854,37 @@ class AppLocalizationsAz extends AppLocalizations {
 
   @override
   String get documents => 'Sənədlər';
+
+  @override
+  String get rideCall => 'Zəng';
+
+  @override
+  String get noDriversNearbyTitle => 'Yaxınlıqda sürücü yoxdur';
+
+  @override
+  String get noDriversNearbyBody =>
+      'Hazırda bu səfər üçün sürücü tapa bilmədik.';
+
+  @override
+  String get noDriversNearbyHint =>
+      'Bir az sonra yenidən cəhd edin və ya götürülmə yerini dəyişin.';
+
+  @override
+  String get backToRide => 'Səfərə qayıt';
+
+  @override
+  String get cancelRideConfirmationTitle => 'Bu səfəri ləğv edək?';
+
+  @override
+  String get cancelRideSearchBody =>
+      'Axtarışa davam edə və ya bu sorğunu ləğv edə bilərsiniz.';
+
+  @override
+  String get keepSearching => 'Axtarışa davam et';
+
+  @override
+  String get profilePhoto => 'Profil şəkli';
+
+  @override
+  String get changeProfilePhoto => 'Şəkli dəyiş';
 }

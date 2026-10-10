@@ -43,49 +43,48 @@ class WalletResponseModel {
   String minimumAmountAddedToWallet;
   bool enableSaveCard;
 
-  WalletResponseModel({required this.success,
-    required this.message,
-    required this.walletBalance,
-    required this.defaultCardId,
-    required this.currencyCode,
-    required this.currencySymbol,
-    required this.walletHistory,
-    required this.braintreeTree,
-    required this.mercadopago,
-    required this.stripe,
-    required this.razorPay,
-    required this.paystack,
-    required this.khaltiPay,
-    required this.cashFree,
-    required this.flutterWave,
-    required this.paymob,
-    required this.bankInfoExists,
-    required this.stripeEnvironment,
-    required this.stripeTestPublishableKey,
-    required this.stripeLivePublishableKey,
-    required this.razorPayEnvironment,
-    required this.razorpayTestApiKey,
-    required this.razorpayLiveApiKey,
-    required this.paystackEnvironment,
-    required this.khaltiPayEnvironment,
-    required this.khaltiTestApiKey,
-    required this.khaltiLiveApiKey,
-    required this.paystackTestPublishableKey,
-    required this.paystackLivePublishableKey,
-    required this.flutterwaveEnvironment,
-    required this.flutterWaveTestSecretKey,
-    required this.flutterWaveLiveSecretKey,
-    required this.cashfreeEnvironment,
-    required this.cashfreeTestAppId,
-    required this.cashfreeLiveAppId,
-    required this.paymentGateways,
-    required this.minimumAmountAddedToWallet,
-    required this.enableSaveCard});
+  WalletResponseModel(
+      {required this.success,
+      required this.message,
+      required this.walletBalance,
+      required this.defaultCardId,
+      required this.currencyCode,
+      required this.currencySymbol,
+      required this.walletHistory,
+      required this.braintreeTree,
+      required this.mercadopago,
+      required this.stripe,
+      required this.razorPay,
+      required this.paystack,
+      required this.khaltiPay,
+      required this.cashFree,
+      required this.flutterWave,
+      required this.paymob,
+      required this.bankInfoExists,
+      required this.stripeEnvironment,
+      required this.stripeTestPublishableKey,
+      required this.stripeLivePublishableKey,
+      required this.razorPayEnvironment,
+      required this.razorpayTestApiKey,
+      required this.razorpayLiveApiKey,
+      required this.paystackEnvironment,
+      required this.khaltiPayEnvironment,
+      required this.khaltiTestApiKey,
+      required this.khaltiLiveApiKey,
+      required this.paystackTestPublishableKey,
+      required this.paystackLivePublishableKey,
+      required this.flutterwaveEnvironment,
+      required this.flutterWaveTestSecretKey,
+      required this.flutterWaveLiveSecretKey,
+      required this.cashfreeEnvironment,
+      required this.cashfreeTestAppId,
+      required this.cashfreeLiveAppId,
+      required this.paymentGateways,
+      required this.minimumAmountAddedToWallet,
+      required this.enableSaveCard});
 
   factory WalletResponseModel.fromJson(Map<String, dynamic> json) {
-
-    print('asdasdsadsad${json}');
-   return WalletResponseModel(
+    return WalletResponseModel(
         success: json["success"] ?? false,
         message: json["message"] ?? '',
         walletBalance: json["wallet_balance"] ?? '',
@@ -115,10 +114,8 @@ class WalletResponseModel {
         khaltiPayEnvironment: json["khalti_pay_environment"] ?? '',
         khaltiTestApiKey: json["khalti_test_api_key"] ?? '',
         khaltiLiveApiKey: json["khalti_live_api_key"] ?? '',
-        paystackTestPublishableKey:
-        json["paystack_test_publishable_key"] ?? '',
-        paystackLivePublishableKey:
-        json["paystack_live_publishable_key"] ?? '',
+        paystackTestPublishableKey: json["paystack_test_publishable_key"] ?? '',
+        paystackLivePublishableKey: json["paystack_live_publishable_key"] ?? '',
         flutterwaveEnvironment: json["flutterwave_environment"] ?? '',
         flutterWaveTestSecretKey: json["flutter_wave_test_secret_key"] ?? '',
         flutterWaveLiveSecretKey: json["flutter_wave_live_secret_key"] ?? '',
@@ -126,11 +123,11 @@ class WalletResponseModel {
         cashfreeTestAppId: json["cashfree_test_app_id"] ?? '',
         cashfreeLiveAppId: json["cashfree_live_app_id"] ?? '',
         paymentGateways: json["payment_gateways"] != null
-            ? List<PaymentGateway>.from(json["payment_gateways"]
-            .map((x) => PaymentGateway.fromJson(x)))
+            ? List<PaymentGateway>.from(
+                json["payment_gateways"].map((x) => PaymentGateway.fromJson(x)))
             : [],
         minimumAmountAddedToWallet:
-        json['minimum_amount_added_to_wallet'] ?? '0',
+            json['minimum_amount_added_to_wallet'] ?? '0',
         enableSaveCard: json['enable_save_card'] ?? false);
   }
 }

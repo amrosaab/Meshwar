@@ -21,7 +21,8 @@ class SosShimmerLoading extends StatelessWidget {
         margin: const EdgeInsets.only(right: 10, bottom: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(5),
-          border: Border.all(width: 0.5, color: AppColors.surfaceBorder(context)),
+          border:
+              Border.all(width: 0.5, color: AppColors.surfaceBorder(context)),
         ),
         child: Padding(
           padding: EdgeInsets.all(size.width * 0.025),

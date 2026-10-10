@@ -114,8 +114,8 @@ class EtaDetailsWidget extends StatelessWidget {
                           .textTheme
                           .bodyMedium!
                           .copyWith(
-                          color: Theme.of(context).primaryColorDark,
-                          fontWeight: FontWeight.bold),
+                              color: Theme.of(context).primaryColorDark,
+                              fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: size.width * 0.01),
                     Row(
@@ -123,7 +123,7 @@ class EtaDetailsWidget extends StatelessWidget {
                       children: [
                         MyText(
                           text:
-                          '${AppLocalizations.of(context)!.baseDistancePrice} ',
+                              '${AppLocalizations.of(context)!.baseDistancePrice} ',
                           textStyle: Theme.of(context)
                               .textTheme
                               .bodySmall!
@@ -131,13 +131,13 @@ class EtaDetailsWidget extends StatelessWidget {
                         ),
                         MyText(
                           text:
-                          '${etaInfo.currency}${etaInfo.basePrice.toStringAsFixed(2)}',
+                              '${etaInfo.currency}${etaInfo.basePrice.toStringAsFixed(2)}',
                           textStyle: Theme.of(context)
                               .textTheme
                               .bodySmall!
                               .copyWith(
-                              fontSize: 14,
-                              color: Theme.of(context).primaryColorDark),
+                                  fontSize: 14,
+                                  color: Theme.of(context).primaryColorDark),
                         )
                       ],
                     ),
@@ -147,7 +147,7 @@ class EtaDetailsWidget extends StatelessWidget {
                       children: [
                         MyText(
                           text:
-                          '${AppLocalizations.of(context)!.additional} \n${AppLocalizations.of(context)!.distancePrice} (${etaInfo.calculatedDistance}${etaInfo.unitInWords} x ${etaInfo.currency}${etaInfo.pricePerDistance})',
+                              '${AppLocalizations.of(context)!.additional} \n${AppLocalizations.of(context)!.distancePrice} (${etaInfo.calculatedDistance}${etaInfo.unitInWords} x ${etaInfo.currency}${etaInfo.pricePerDistance})',
                           textStyle: Theme.of(context)
                               .textTheme
                               .bodySmall!
@@ -155,13 +155,13 @@ class EtaDetailsWidget extends StatelessWidget {
                         ),
                         MyText(
                           text:
-                          '${etaInfo.currency}${etaInfo.distancePrice.toStringAsFixed(2)}',
+                              '${etaInfo.currency}${etaInfo.distancePrice.toStringAsFixed(2)}',
                           textStyle: Theme.of(context)
                               .textTheme
                               .bodySmall!
                               .copyWith(
-                              fontSize: 14,
-                              color: Theme.of(context).primaryColorDark),
+                                  fontSize: 14,
+                                  color: Theme.of(context).primaryColorDark),
                         )
                       ],
                     ),
@@ -171,7 +171,7 @@ class EtaDetailsWidget extends StatelessWidget {
                       children: [
                         MyText(
                           text:
-                          '${AppLocalizations.of(context)!.timePrice}(${etaInfo.time} mins x ${etaInfo.currency}${etaInfo.pricePerTime})',
+                              '${AppLocalizations.of(context)!.timePrice}(${etaInfo.time} mins x ${etaInfo.currency}${etaInfo.pricePerTime})',
                           textStyle: Theme.of(context)
                               .textTheme
                               .bodySmall!
@@ -179,13 +179,13 @@ class EtaDetailsWidget extends StatelessWidget {
                         ),
                         MyText(
                           text:
-                          '${etaInfo.currency}${etaInfo.timePrice.toStringAsFixed(2)}',
+                              '${etaInfo.currency}${etaInfo.timePrice.toStringAsFixed(2)}',
                           textStyle: Theme.of(context)
                               .textTheme
                               .bodySmall!
                               .copyWith(
-                              fontSize: 14,
-                              color: Theme.of(context).primaryColorDark),
+                                  fontSize: 14,
+                                  color: Theme.of(context).primaryColorDark),
                         )
                       ],
                     ),
@@ -206,13 +206,13 @@ class EtaDetailsWidget extends StatelessWidget {
                           ),
                           MyText(
                             text:
-                            '${etaInfo.currency}${etaInfo.airportSurgeFee.toStringAsFixed(2)}',
+                                '${etaInfo.currency}${etaInfo.airportSurgeFee.toStringAsFixed(2)}',
                             textStyle: Theme.of(context)
                                 .textTheme
                                 .bodySmall!
                                 .copyWith(
-                                fontSize: 14,
-                                color: Theme.of(context).primaryColorDark),
+                                    fontSize: 14,
+                                    color: Theme.of(context).primaryColorDark),
                           )
                         ],
                       ),
@@ -222,7 +222,7 @@ class EtaDetailsWidget extends StatelessWidget {
                       children: [
                         MyText(
                           text:
-                          '${AppLocalizations.of(context)!.tax}(${etaInfo.tax}%)', //(${etaInfo.tax})
+                              '${AppLocalizations.of(context)!.tax}(${etaInfo.tax}%)', //(${etaInfo.tax})
                           textStyle: Theme.of(context)
                               .textTheme
                               .bodySmall!
@@ -230,13 +230,13 @@ class EtaDetailsWidget extends StatelessWidget {
                         ),
                         MyText(
                           text:
-                          '${etaInfo.currency}${etaInfo.taxAmount.toStringAsFixed(2)}',
+                              '${etaInfo.currency}${etaInfo.taxAmount.toStringAsFixed(2)}',
                           textStyle: Theme.of(context)
                               .textTheme
                               .bodySmall!
                               .copyWith(
-                              fontSize: 14,
-                              color: Theme.of(context).primaryColorDark),
+                                  fontSize: 14,
+                                  color: Theme.of(context).primaryColorDark),
                         )
                       ],
                     ),
@@ -253,13 +253,13 @@ class EtaDetailsWidget extends StatelessWidget {
                         ),
                         MyText(
                           text:
-                          '${etaInfo.currency}${etaInfo.withoutDiscountAdminCommision.toStringAsFixed(2)}',
+                              '${etaInfo.currency}${etaInfo.withoutDiscountAdminCommision.toStringAsFixed(2)}',
                           textStyle: Theme.of(context)
                               .textTheme
                               .bodySmall!
                               .copyWith(
-                              fontSize: 14,
-                              color: Theme.of(context).primaryColorDark),
+                                  fontSize: 14,
+                                  color: Theme.of(context).primaryColorDark),
                         )
                       ],
                     ),
@@ -278,13 +278,13 @@ class EtaDetailsWidget extends StatelessWidget {
                           ),
                           MyText(
                             text:
-                            '${etaInfo.currency}${etaInfo.preferencePriceTotal.toStringAsFixed(2)}',
+                                '${etaInfo.currency}${etaInfo.preferencePriceTotal.toStringAsFixed(2)}',
                             textStyle: Theme.of(context)
                                 .textTheme
                                 .bodySmall!
                                 .copyWith(
-                                fontSize: 14,
-                                color: Theme.of(context).primaryColorDark),
+                                    fontSize: 14,
+                                    color: Theme.of(context).primaryColorDark),
                           )
                         ],
                       ),
@@ -300,20 +300,20 @@ class EtaDetailsWidget extends StatelessWidget {
                               .textTheme
                               .bodyMedium!
                               .copyWith(
-                              fontSize: 16,
-                              color: Theme.of(context).primaryColorDark,
-                              fontWeight: FontWeight.bold),
+                                  fontSize: 16,
+                                  color: Theme.of(context).primaryColorDark,
+                                  fontWeight: FontWeight.bold),
                         ),
                         MyText(
                           text:
-                          '${etaInfo.currency}${etaInfo.total.toStringAsFixed(2)}',
+                              '${etaInfo.currency}${etaInfo.total.toStringAsFixed(2)}',
                           textStyle: Theme.of(context)
                               .textTheme
                               .bodyMedium!
                               .copyWith(
-                              fontSize: 16,
-                              color: Theme.of(context).primaryColorDark,
-                              fontWeight: FontWeight.bold),
+                                  fontSize: 16,
+                                  color: Theme.of(context).primaryColorDark,
+                                  fontWeight: FontWeight.bold),
                         )
                       ],
                     ),
@@ -336,14 +336,14 @@ class EtaDetailsWidget extends StatelessWidget {
                             text: AppLocalizations.of(context)!
                                 .infoWaitingPrice
                                 .replaceAll('***',
-                                '${etaInfo.currency} ${etaInfo.waitingCharge}')
+                                    '${etaInfo.currency} ${etaInfo.waitingCharge}')
                                 .replaceAll('*',
-                                '${etaInfo.freeWaitingTimeInMinsBeforeTripStart}'),
+                                    '${etaInfo.freeWaitingTimeInMinsBeforeTripStart}'),
                             textStyle: Theme.of(context)
                                 .textTheme
                                 .bodySmall!
                                 .copyWith(
-                                fontSize: 12, color: AppColors.hintColor),
+                                    fontSize: 12, color: AppColors.hintColor),
                             maxLines: 2,
                           ),
                         ),
@@ -364,13 +364,13 @@ class EtaDetailsWidget extends StatelessWidget {
                         ),
                         MyText(
                           text:
-                          '${etaInfo.currency}${etaInfo.pricePerDistance.toStringAsFixed(2)}',
+                              '${etaInfo.currency}${etaInfo.pricePerDistance.toStringAsFixed(2)}',
                           textStyle: Theme.of(context)
                               .textTheme
                               .bodySmall!
                               .copyWith(
-                              fontSize: 14,
-                              color: Theme.of(context).primaryColorDark),
+                                  fontSize: 14,
+                                  color: Theme.of(context).primaryColorDark),
                         )
                       ],
                     ),
