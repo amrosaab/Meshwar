@@ -13,9 +13,7 @@ class WalletTransferMoneyWidget extends StatelessWidget {
         child: BlocBuilder<AccBloc, AccState>(builder: (context, state) {
           final bloc = context.read<AccBloc>();
           return Directionality(
-              textDirection: bloc.textDirection == 'rtl'
-                  ? TextDirection.rtl
-                  : TextDirection.ltr,
+              textDirection: Directionality.of(context),
               child: TransferMoneySheet(
                 amountController: bloc.transferAmount,
                 phoneController: bloc.transferPhonenumber,

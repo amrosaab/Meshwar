@@ -5,7 +5,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../common/app_colors.dart';
 import '../../../../core/utils/custom_background.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -39,6 +38,10 @@ class DestinationPage extends StatefulWidget {
 }
 
 class _DestinationPageState extends State<DestinationPage> {
+  final _routeTimelineKey = GlobalKey();
+  final _pickupMarkerKey = GlobalKey();
+  final _destinationMarkerKey = GlobalKey();
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -320,9 +323,7 @@ class _DestinationPageState extends State<DestinationPage> {
           builder: (context, state) {
             final homeBloc = context.read<HomeBloc>();
             return Directionality(
-              textDirection: homeBloc.textDirection == 'rtl'
-                  ? TextDirection.rtl
-                  : TextDirection.ltr,
+              textDirection: Directionality.of(context),
               child: GestureDetector(
                 onTap: () {
                   FocusScope.of(context).requestFocus(FocusNode());
@@ -336,6 +337,7 @@ class _DestinationPageState extends State<DestinationPage> {
                     extendBodyBehindAppBar: true,
                     appBar: AppBar(
                       elevation: 0,
+                      centerTitle: false,
                       backgroundColor: Colors.transparent,
                       automaticallyImplyLeading: false,
                       leading: Padding(
@@ -355,6 +357,7 @@ class _DestinationPageState extends State<DestinationPage> {
                             horizontal: 1, vertical: 4),
                         child: MyText(
                             text: AppLocalizations.of(context)!.planYourRide,
+                            textAlign: TextAlign.start,
                             textStyle: Theme.of(context)
                                 .textTheme
                                 .bodySmall!
@@ -482,7 +485,7 @@ class _DestinationPageState extends State<DestinationPage> {
                                     .searchInfoMessage
                                     .isNotEmpty)
                                   Padding(
-                                    padding: EdgeInsetsDirectional.only(
+                                    padding: const EdgeInsetsDirectional.only(
                                         start: 16, top: 16),
                                     child: MyText(
                                         text: context
@@ -650,17 +653,15 @@ class _DestinationPageState extends State<DestinationPage> {
               if (homeBloc.addressList.isNotEmpty) ...[
                 Stack(
                   children: [
-                    // Faint solid timeline line threading through every
-                    // row's gradient marker badge (see the
-                    // SizedBox(width: 28) marker slot below) — 14 is that
-                    // column's horizontal center.
-                    Positioned(
-                      left: 14,
-                      top: 17,
-                      bottom: 17,
-                      child: Container(
-                        width: 2,
-                        color: AppColors.meshwarRed.withValues(alpha: 0.18),
+                    Positioned.fill(
+                      child: CustomPaint(
+                        key: _routeTimelineKey,
+                        painter: _RouteConnectorPainter(
+                          timeline: _routeTimelineKey,
+                          pickup: _pickupMarkerKey,
+                          destination: _destinationMarkerKey,
+                          color: AppColors.meshwarRed.withValues(alpha: 0.18),
+                        ),
                       ),
                     ),
                     Theme(
@@ -693,8 +694,8 @@ class _DestinationPageState extends State<DestinationPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Padding(
-                                    padding: const EdgeInsets.only(
-                                        left: 36, bottom: 4),
+                                    padding: const EdgeInsetsDirectional.only(
+                                        start: 36, bottom: 4),
                                     child: MyText(
                                       text: (index == 0)
                                           ? AppLocalizations.of(context)!
@@ -727,6 +728,11 @@ class _DestinationPageState extends State<DestinationPage> {
                                       // drawn behind the list lines up with
                                       // every marker regardless of row type.
                                       SizedBox(
+                                        key: index == 0
+                                            ? _pickupMarkerKey
+                                            : index == lastIndex
+                                                ? _destinationMarkerKey
+                                                : null,
                                         width: 28,
                                         child: Center(
                                           child: (index == 0)
@@ -915,10 +921,10 @@ class _DestinationPageState extends State<DestinationPage> {
                                                         },
                                                         child: Padding(
                                                           padding:
-                                                              const EdgeInsets
+                                                              const EdgeInsetsDirectional
                                                                   .only(
-                                                                  left: 4,
-                                                                  right: 2),
+                                                                  start: 4,
+                                                                  end: 2),
                                                           child: Icon(
                                                             Icons.cancel,
                                                             size: 20,
@@ -1081,9 +1087,9 @@ class _DestinationPageState extends State<DestinationPage> {
 
   Widget buildDividerWidget(BuildContext context, Size size) {
     return Padding(
-      padding: EdgeInsets.only(
-        left: size.width * 0.035,
-        right: size.width * 0.02,
+      padding: EdgeInsetsDirectional.only(
+        start: size.width * 0.035,
+        end: size.width * 0.02,
       ),
       child: SizedBox(
         height: 12,
@@ -1126,9 +1132,9 @@ class _DestinationPageState extends State<DestinationPage> {
                 (index) {
                   final location = favLocations.elementAt(index);
                   return Padding(
-                    padding: EdgeInsets.only(
-                        left: index == 0 ? size.width * 0.032 : 0,
-                        right: size.width * 0.04),
+                    padding: EdgeInsetsDirectional.only(
+                        start: index == 0 ? size.width * 0.032 : 0,
+                        end: size.width * 0.04),
                     child: InkWell(
                       //splashColor: Colors.white24,
                       onTap: () {
@@ -1156,7 +1162,7 @@ class _DestinationPageState extends State<DestinationPage> {
               children: [
                 if (!isHomeAvailable)
                   Padding(
-                    padding: EdgeInsets.only(right: size.width * 0.02),
+                    padding: EdgeInsetsDirectional.only(end: size.width * 0.02),
                     child: InkWell(
                       onTap: () {
                         Navigator.pushNamed(
@@ -1184,7 +1190,7 @@ class _DestinationPageState extends State<DestinationPage> {
                   ),
                 if (!isWorkAvailable)
                   Padding(
-                    padding: EdgeInsets.only(right: size.width * 0.02),
+                    padding: EdgeInsetsDirectional.only(end: size.width * 0.02),
                     child: InkWell(
                       onTap: () {
                         Navigator.pushNamed(
@@ -1212,7 +1218,7 @@ class _DestinationPageState extends State<DestinationPage> {
                   ),
                 if (!isOthersAvailable)
                   Padding(
-                    padding: EdgeInsets.only(right: size.width * 0.02),
+                    padding: EdgeInsetsDirectional.only(end: size.width * 0.02),
                     child: InkWell(
                       onTap: () {
                         Navigator.pushNamed(
@@ -1326,7 +1332,7 @@ class _DestinationPageState extends State<DestinationPage> {
                                 RecentRouteSelectEvent(selectedRoute: route));
                           },
                           child: Container(
-                            margin: const EdgeInsets.only(right: 12),
+                            margin: const EdgeInsetsDirectional.only(end: 12),
                             decoration: BoxDecoration(
                               color: AppColors.surfaceStrong(context),
                               borderRadius: BorderRadius.circular(20),
@@ -1345,8 +1351,8 @@ class _DestinationPageState extends State<DestinationPage> {
                                 // Timeline line — matches the address
                                 // card's marker column (12 is that
                                 // column's horizontal center here).
-                                Positioned(
-                                  left: 12,
+                                PositionedDirectional(
+                                  start: 12,
                                   top: 20,
                                   bottom: 20,
                                   child: Container(
@@ -1355,9 +1361,9 @@ class _DestinationPageState extends State<DestinationPage> {
                                         .withValues(alpha: 0.18),
                                   ),
                                 ),
-                                Positioned(
+                                PositionedDirectional(
                                   top: 0,
-                                  right: 0,
+                                  end: 0,
                                   child: Container(
                                     height: 26,
                                     width: 26,
@@ -1536,7 +1542,7 @@ class _DestinationPageState extends State<DestinationPage> {
                       .length,
                   (index) {
                     return Container(
-                      margin: const EdgeInsets.only(right: 5),
+                      margin: const EdgeInsetsDirectional.only(end: 5),
                       height: homeBloc.routesIndex == index ? 10 : 8,
                       width: homeBloc.routesIndex == index ? 10 : 8,
                       decoration: BoxDecoration(
@@ -1724,4 +1730,46 @@ class _DestinationPageState extends State<DestinationPage> {
       ),
     );
   }
+}
+
+class _RouteConnectorPainter extends CustomPainter {
+  _RouteConnectorPainter({
+    required this.timeline,
+    required this.pickup,
+    required this.destination,
+    required this.color,
+  });
+
+  final GlobalKey timeline, pickup, destination;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final surface = timeline.currentContext?.findRenderObject();
+    final first = pickup.currentContext?.findRenderObject();
+    final last = destination.currentContext?.findRenderObject();
+    if (surface is! RenderBox ||
+        first is! RenderBox ||
+        last is! RenderBox ||
+        !surface.hasSize ||
+        !first.hasSize ||
+        !last.hasSize) {
+      return;
+    }
+    // Paint behind the badges, from their actual centers. Label height and
+    // row spacing must not leave a tail beyond the first or last marker.
+    final start = surface
+        .globalToLocal(first.localToGlobal(first.size.center(Offset.zero)));
+    final end = surface
+        .globalToLocal(last.localToGlobal(last.size.center(Offset.zero)));
+    canvas.drawLine(
+        start,
+        end,
+        Paint()
+          ..color = color
+          ..strokeWidth = 2);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RouteConnectorPainter oldDelegate) => true;
 }

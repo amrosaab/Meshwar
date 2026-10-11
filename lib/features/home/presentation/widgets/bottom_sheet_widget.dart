@@ -83,7 +83,7 @@ class BottomSheetWidget extends StatelessWidget {
                       width: size.width * 0.1,
                       height: size.width * 0.01,
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceBorder(context),
+                        color: AppColors.primary,
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),

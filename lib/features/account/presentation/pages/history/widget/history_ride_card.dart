@@ -33,6 +33,7 @@ class HistoryRideCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rtl = Directionality.of(context) == TextDirection.rtl;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final ink = dark ? const Color(0xFFF8F5F7) : const Color(0xFF201B25);
     final muted = dark ? const Color(0xFFBAADB9) : const Color(0xFF79717C);
@@ -59,9 +60,12 @@ class HistoryRideCard extends StatelessWidget {
               const SizedBox(width: 7),
               Expanded(
                   child: Text(date,
+                      textDirection: TextDirection.ltr,
+                      textAlign: rtl ? TextAlign.right : TextAlign.left,
                       style: base.copyWith(fontSize: 12, color: muted))),
             ]);
             final amount = Text(fare,
+                textDirection: TextDirection.ltr,
                 style: base.copyWith(
                     fontSize: 23, fontWeight: FontWeight.w700, height: 1.2));
             if (constraints.maxWidth < 270 || expandedText) {
@@ -158,8 +162,12 @@ class HistoryRideCard extends StatelessWidget {
               ],
               const SizedBox(width: 6),
               ExcludeSemantics(
-                  child: Icon(Icons.chevron_right_rounded,
-                      size: 20, color: muted)),
+                  child: Icon(
+                      rtl
+                          ? Icons.chevron_left_rounded
+                          : Icons.chevron_right_rounded,
+                      size: 20,
+                      color: muted)),
             ]);
           }),
           if (tripType.isNotEmpty) ...[
@@ -213,6 +221,7 @@ class _HistoryStop extends StatelessWidget {
                   Text(label, style: base.copyWith(fontSize: 11, color: muted)),
                   if (time.isNotEmpty)
                     Text(time,
+                        textDirection: TextDirection.ltr,
                         style: base.copyWith(fontSize: 11, color: muted)),
                 ]),
                 const SizedBox(height: 5),

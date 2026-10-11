@@ -29,6 +29,7 @@ class _TransferMoneySheetState extends State<TransferMoneySheet> {
   final _form = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
+    final rtl = Directionality.of(context) == TextDirection.rtl;
     final l10n = AppLocalizations.of(context)!;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final accent = dark ? const Color(0xFFFF82A6) : AppColors.meshwarRed;
@@ -191,6 +192,9 @@ class _TransferMoneySheetState extends State<TransferMoneySheet> {
                                                 enabled: !widget.busy,
                                                 textDirection:
                                                     TextDirection.ltr,
+                                                textAlign: rtl
+                                                    ? TextAlign.right
+                                                    : TextAlign.left,
                                                 keyboardType:
                                                     TextInputType.phone,
                                                 textInputAction:
@@ -228,6 +232,9 @@ class _TransferMoneySheetState extends State<TransferMoneySheet> {
                                                 enabled: !widget.busy,
                                                 textDirection:
                                                     TextDirection.ltr,
+                                                textAlign: rtl
+                                                    ? TextAlign.right
+                                                    : TextAlign.left,
                                                 keyboardType:
                                                     const TextInputType
                                                         .numberWithOptions(

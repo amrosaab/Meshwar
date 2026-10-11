@@ -1,11 +1,83 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:meshwar_user/features/account/application/acc_bloc.dart';
 import 'package:meshwar_user/features/account/domain/models/walletpage_model.dart';
 import 'package:meshwar_user/features/account/presentation/pages/wallet/widget/add_money_content.dart';
+import 'package:meshwar_user/features/account/presentation/pages/wallet/widget/add_money_wallet_widget.dart';
 import 'package:meshwar_user/features/account/presentation/pages/wallet/widget/wallet_payment_content.dart';
 import 'package:meshwar_user/l10n/app_localizations.dart';
 
 void main() {
+  testWidgets('Add money modal mirrors Arabic and clips its top corners',
+      (tester) async {
+    tester.view.physicalSize = const Size(402, 874);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final bloc = AccBloc();
+    addTearDown(() async {
+      await bloc.close();
+      bloc.walletAmountController.dispose();
+    });
+    for (final arabic in [false, true]) {
+      bloc.textDirection = arabic ? 'ltr' : 'rtl';
+      await tester.pumpWidget(MaterialApp(
+        locale: Locale(arabic ? 'ar' : 'en'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: BlocProvider<AccBloc>.value(
+          value: bloc,
+          child: Builder(
+              builder: (context) => Scaffold(
+                    body: TextButton(
+                      onPressed: () => showModalBottomSheet<void>(
+                        context: context,
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                        builder: (_) => FractionallySizedBox(
+                          heightFactor: 1,
+                          child: AddMoneyWalletWidget(
+                              cont: context, minWalletAmount: '1'),
+                        ),
+                      ),
+                      child: const Text('Open add money'),
+                    ),
+                  )),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open add money'));
+      await tester.pumpAndSettle();
+      final content = find.byType(AddMoneyContent);
+      final context = tester.element(content);
+      final l10n = AppLocalizations.of(context)!;
+      expect(Directionality.of(context),
+          arabic ? TextDirection.rtl : TextDirection.ltr);
+      final clip = tester.widget<ClipRRect>(
+          find.ancestor(of: content, matching: find.byType(ClipRRect)).first);
+      expect(clip.borderRadius,
+          const BorderRadius.vertical(top: Radius.circular(28)));
+      expect(clip.clipBehavior, Clip.antiAlias);
+      expect(
+          tester.getCenter(find.byType(BackButton)).dx >
+              tester.getCenter(find.text(l10n.addMoney)).dx,
+          arabic);
+      expect(
+          tester.getCenter(find.byIcon(Icons.savings_outlined)).dx >
+              tester.getCenter(find.text(l10n.walletBalance)).dx,
+          arabic);
+      expect(
+          tester.getCenter(find.widgetWithText(OutlinedButton, '1')).dx,
+          lessThan(
+              tester.getCenter(find.widgetWithText(OutlinedButton, '3')).dx));
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(content, findsNothing);
+    }
+  });
+
   for (final arabic in [false, true]) {
     testWidgets('Amount keypad supports decimals arabic=$arabic',
         (tester) async {

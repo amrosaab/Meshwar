@@ -39,8 +39,8 @@ class _HistoryPageState extends State<HistoryPage> {
       final surface = dark ? AppColors.bgAsphaltLight : Colors.white;
       final ink = dark ? const Color(0xFFF8F5F7) : const Color(0xFF201B25);
       return Directionality(
-        textDirection:
-            bloc.textDirection == 'rtl' ? TextDirection.rtl : TextDirection.ltr,
+        // Follow locale changes even while this tab stays mounted.
+        textDirection: Directionality.of(context),
         child: Scaffold(
           backgroundColor: RideVisuals.canvas(context),
           appBar: AppBar(

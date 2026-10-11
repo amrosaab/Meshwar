@@ -1,9 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:meshwar_user/common/app_arguments.dart';
+import 'package:meshwar_user/features/account/application/acc_bloc.dart';
+import 'package:meshwar_user/features/account/presentation/pages/history/page/history_page.dart';
+import 'package:meshwar_user/features/home/domain/models/user_details_model.dart';
 import 'package:meshwar_user/features/account/presentation/pages/history/widget/history_filter_tabs.dart';
 import 'package:meshwar_user/features/account/presentation/pages/history/widget/history_nodata.dart';
 import 'package:meshwar_user/features/account/presentation/pages/history/widget/history_ride_card.dart';
 import 'package:meshwar_user/l10n/app_localizations.dart';
+
+class _HistoryPreviewBloc extends AccBloc {
+  @override
+  Future<void> getDirection(AccEvent event, Emitter<AccState> emit) async {}
+
+  @override
+  Future<void> historyInitEvent(
+      HistoryPageInitEvent event, Emitter<AccState> emit) async {}
+}
+
+class _User extends Fake implements UserDetail {}
 
 Widget fixture({
   bool arabic = false,
@@ -32,6 +48,84 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
   }
+
+  testWidgets('Mounted history follows locale instead of cached bloc direction',
+      (tester) async {
+    setSize(tester, const Size(402, 874));
+    final bloc = _HistoryPreviewBloc();
+    addTearDown(bloc.close);
+    final page = BlocProvider<AccBloc>.value(
+      value: bloc,
+      child: HistoryPage(
+        arg: HistoryPageArguments(
+            isSupportTicketEnabled: '0', userData: _User()),
+      ),
+    );
+    for (final arabic in [false, true, false]) {
+      // Deliberately keep the cached setting opposite to the active locale.
+      bloc.textDirection = arabic ? 'ltr' : 'rtl';
+      await tester.pumpWidget(fixture(arabic: arabic, child: page));
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(HistoryFilterTabs));
+      expect(Directionality.of(context),
+          arabic ? TextDirection.rtl : TextDirection.ltr);
+      final first =
+          tester.getCenter(find.byKey(const ValueKey('historyFilter0')));
+      final last =
+          tester.getCenter(find.byKey(const ValueKey('historyFilter2')));
+      expect(first.dx > last.dx, arabic);
+      final title = find.text(AppLocalizations.of(context)!.history);
+      final badge = find.descendant(
+          of: find.byType(AppBar), matching: find.byIcon(Icons.history_rounded));
+      expect(tester.getCenter(badge).dx > tester.getCenter(title).dx, arabic);
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+  testWidgets(
+      'Arabic ride card mirrors route and arrow, preserves numeric order',
+      (tester) async {
+    setSize(tester, const Size(402, 874));
+    await tester.pumpWidget(fixture(
+      arabic: true,
+      child: const Padding(
+        padding: EdgeInsets.all(20),
+        child: HistoryRideCard(
+          date: '12th Sep 09:31 PM',
+          fare: r'$ 48',
+          pickup: 'ميدان التحرير',
+          drop: 'مدينة نصر',
+          pickupTime: '09:30 PM',
+          dropTime: '09:31 PM',
+          vehicle: 'Taxi',
+          status: HistoryRideStatus.completed,
+          statusLabel: 'المكتملة',
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    for (final entry in {
+      Icons.my_location_rounded: 'ميدان التحرير',
+      Icons.location_on_rounded: 'مدينة نصر',
+      Icons.directions_car_rounded: 'Taxi',
+    }.entries) {
+      expect(tester.getCenter(find.byIcon(entry.key)).dx,
+          greaterThan(tester.getCenter(find.text(entry.value)).dx));
+    }
+    expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+    expect(tester.getCenter(find.byIcon(Icons.chevron_left_rounded)).dx,
+        lessThan(tester.getCenter(find.text('Taxi')).dx));
+    for (final value in [
+      '12th Sep 09:31 PM',
+      r'$ 48',
+      '09:30 PM',
+      '09:31 PM'
+    ]) {
+      expect(tester.widget<Text>(find.text(value)).textDirection,
+          TextDirection.ltr);
+    }
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('Filters select another category and block changes while loading',
       (tester) async {

@@ -23,36 +23,39 @@ class AddMoneyWalletWidget extends StatelessWidget {
         }, child: BlocBuilder<AccBloc, AccState>(builder: (context, state) {
           final bloc = context.read<AccBloc>();
           return Directionality(
-              textDirection: bloc.textDirection == 'rtl'
-                  ? TextDirection.rtl
-                  : TextDirection.ltr,
-              child: AddMoneyContent(
-                controller: bloc.walletAmountController,
-                currency: bloc.walletResponse?.currencySymbol ?? '',
-                balance: bloc.walletResponse?.walletBalance ?? '0',
-                onChanged: (amount) => bloc.addMoney = amount,
-                onNext: () {
-                  final amount =
-                      double.tryParse(bloc.walletAmountController.text);
-                  if (amount == null || !amount.isFinite || amount <= 0) return;
-                  bloc.addMoney = amount;
-                  showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      useSafeArea: true,
-                      backgroundColor: AppColors.surface(context),
-                      shape: const RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.vertical(top: Radius.circular(28))),
-                      clipBehavior: Clip.antiAlias,
-                      builder: (_) => BlocProvider.value(
-                          value: bloc,
-                          child: WalletPaymentGatewayListWidget(
-                              cont: context,
-                              walletPaymentGatways:
-                                  bloc.walletPaymentGatways)));
-                },
-              ));
+              textDirection: Directionality.of(context),
+              child: ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(28)),
+                  child: AddMoneyContent(
+                    controller: bloc.walletAmountController,
+                    currency: bloc.walletResponse?.currencySymbol ?? '',
+                    balance: bloc.walletResponse?.walletBalance ?? '0',
+                    onChanged: (amount) => bloc.addMoney = amount,
+                    onNext: () {
+                      final amount =
+                          double.tryParse(bloc.walletAmountController.text);
+                      if (amount == null || !amount.isFinite || amount <= 0) {
+                        return;
+                      }
+                      bloc.addMoney = amount;
+                      showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          useSafeArea: true,
+                          backgroundColor: AppColors.surface(context),
+                          shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(28))),
+                          clipBehavior: Clip.antiAlias,
+                          builder: (_) => BlocProvider.value(
+                              value: bloc,
+                              child: WalletPaymentGatewayListWidget(
+                                  cont: context,
+                                  walletPaymentGatways:
+                                      bloc.walletPaymentGatways)));
+                    },
+                  )));
         })),
       );
 }

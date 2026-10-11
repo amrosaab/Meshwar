@@ -41,7 +41,8 @@ class WalletHistoryPage extends StatelessWidget {
       useSafeArea: true,
       backgroundColor: AppColors.surfaceStrong(context),
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      clipBehavior: Clip.antiAlias,
       builder: (_) => FractionallySizedBox(
           heightFactor: 1,
           child: AddMoneyWalletWidget(
